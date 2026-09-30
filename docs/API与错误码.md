@@ -43,7 +43,9 @@ Somatic AI SDK 的 Swift 方法使用 actor 和 `async/await`；Kotlin 读取/�
 
 `allowUntested=true` 仅用于历史和设置读取，先满足宿主固件准入，再允许 `experimental` / `untested` 的只读尝试，不改变验证状态、时间规则或错误语义。它不作用于设置写入、校时、清除和研究流。
 
-设置读取使用 `SettingKind.time/personalInfo/stepGoal/automaticMeasurement/reminders/alarms/basic`。`stepGoal` 当前为 `unsupported`。闹钟只有完整列表才返回 `SettingSnapshot`；部分数据使用 `readHistoryBatch`。通用 `updateSettings` 尚未开放，不能因为存在方法就将设置写入作为可用功能。校时走独立 `synchronizeClock`，调用前检查 `clockWrite` 能力；写入失败时仍可能改变设备时间，保留 `lastClockWriteAttempt` 和新的时间周期标识。
+本分发包 0.1.6-beta / build 20 的设置枚举为 `SettingKind.time/personalInfo/stepGoal/automaticMeasurement/reminders/alarms/basic`。其中 `stepGoal` 为 `unsupported`，不可调用。闹钟只有完整列表才返回 `SettingSnapshot`；部分数据使用 `readHistoryBatch`。通用 `updateSettings` 尚未开放，不能因为存在方法就将设置写入作为可用功能。校时走独立 `synchronizeClock`，调用前检查 `clockWrite` 能力；写入失败时仍可能改变设备时间，保留 `lastClockWriteAttempt` 和新的时间周期标识。
+
+每日步数目标是 App 的偏好设置，由 App 保存并根据 SDK 返回的实际步数计算进度；需要跨设备同步时可由服务端保存。实际步数读取不依赖 `stepGoal`。iOS / Android 的待发布源码分支已移除该枚举，尚未合入源码主分支，也没有对应新分发包；此处 build 20 的枚举说明仍适用于当前二进制。后续升级到移除该枚举的版本时，删除旧引用，在解码前迁移或排除持久化的 `stepGoal` 值，并重新编译消费者。版本区别见 [变更记录](../CHANGELOG.md)。
 
 ## 调用约束
 
