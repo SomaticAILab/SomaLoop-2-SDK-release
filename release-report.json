@@ -1,0 +1,201 @@
+{
+  "schema": "somaloop.public-release/v1",
+  "version": "0.1.6-beta",
+  "buildNumber": 20,
+  "buildRevision": "8730519afcdf94996c6bee5fdea74c586bf8e295e7421727ba446b0672d64cd6",
+  "sourceTree": "099c7df1e289cbe67de854188f2e35afdd611da5",
+  "sourceCommit": "f25b5b73183d9955ee439a40afd91cda61cfe91d",
+  "tag": "v0.1.6-beta-build20",
+  "prerelease": true,
+  "tests": {
+    "androidSDK": {
+      "passed": 190,
+      "skipped": 1,
+      "failed": 0
+    },
+    "androidJavaAPI": {
+      "passed": 6,
+      "skipped": 0,
+      "failed": 0
+    },
+    "androidBinaryConsumer": {
+      "passed": 23,
+      "skipped": 0,
+      "failed": 0
+    },
+    "iosXCTest": {
+      "passed": 198,
+      "skipped": 0,
+      "failed": 0
+    },
+    "iosBinaryConsumer": {
+      "passed": 17,
+      "skipped": 0,
+      "failed": 0
+    },
+    "tooling": {
+      "passed": 81,
+      "skipped": 1,
+      "failed": 0
+    }
+  },
+  "checks": [
+    {
+      "platform": "android",
+      "caseID": "android-host",
+      "outcome": "passed",
+      "caseCount": 191,
+      "passed": 190,
+      "skipped": 1,
+      "failed": 0
+    },
+    {
+      "platform": "android",
+      "caseID": "android-maven-build",
+      "outcome": "passed",
+      "caseCount": 0,
+      "passed": 0,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "platform": "android",
+      "caseID": "android-distribution-surface",
+      "outcome": "passed",
+      "caseCount": 0,
+      "passed": 0,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "platform": "android",
+      "caseID": "android-java-surface",
+      "outcome": "passed",
+      "caseCount": 6,
+      "passed": 6,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "platform": "android",
+      "caseID": "android-binary-consumer",
+      "outcome": "passed",
+      "caseCount": 23,
+      "passed": 23,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "platform": "ios",
+      "caseID": "swift-host",
+      "outcome": "passed",
+      "caseCount": 198,
+      "passed": 198,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "platform": "ios",
+      "caseID": "ios-xcframework",
+      "outcome": "passed",
+      "caseCount": 0,
+      "passed": 0,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "platform": "ios",
+      "caseID": "ios-consumer-project",
+      "outcome": "passed",
+      "caseCount": 0,
+      "passed": 0,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "platform": "ios",
+      "caseID": "ios-binary-consumer-tests",
+      "outcome": "passed",
+      "caseCount": 17,
+      "passed": 17,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "platform": "ios",
+      "caseID": "ios-binary-consumer-device-build",
+      "outcome": "passed",
+      "caseCount": 0,
+      "passed": 0,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "platform": "tooling",
+      "caseID": "tooling-tests",
+      "outcome": "passed",
+      "caseCount": 82,
+      "passed": 81,
+      "skipped": 1,
+      "failed": 0
+    }
+  ],
+  "sourceCI": {
+    "runID": 36659267098,
+    "runAttempt": 1,
+    "headSHA": "f25b5b73183d9955ee439a40afd91cda61cfe91d",
+    "checkoutSHA": "3c29985d62cc91437ce27fcddcf16346579e398c"
+  },
+  "ciEvidenceSHA256": "ea5191916a2f881327df375903575930efebb5e04aec359ec1c5d32bc35c0196",
+  "verifiedCountsSHA256": "b35d571dc8aaf7f2ce8d275cc01d8ae9d1a4f3818cce1594705526a0d9cb370c",
+  "completeSDKPackageMatchesTestedConsumerInputs": true,
+  "sdkImplementationSourceIncluded": false,
+  "rawPersonalDataIncluded": false,
+  "privateDebugAppsIncluded": false,
+  "hardwareEvidenceImported": false,
+  "publicAndroidDemo": {
+    "assembleDebug": "passed",
+    "tasks": 35,
+    "taskDetails": "35 executed",
+    "kotlinJavaAndAPK": true,
+    "inputsStableDuringBuild": true,
+    "resolvedConsumerInputsMatchCI": true,
+    "hardwareBLEValidated": false,
+    "physicalPhoneInstalled": false,
+    "resolvedSDKInputs": [
+      {
+        "configuration": "debugCompileClasspath",
+        "name": "experimental",
+        "version": "0.1.6-beta",
+        "sha256": "4df452d05cbf6a272859e866efef925260f291cae5b38abce36b410275de5fd4"
+      },
+      {
+        "configuration": "debugCompileClasspath",
+        "name": "sdk",
+        "version": "0.1.6-beta",
+        "sha256": "5ae92841f30ee063a1b20f7aac63e62438494cbc9e4782a237123e4474e054ba"
+      },
+      {
+        "configuration": "debugRuntimeClasspath",
+        "name": "experimental",
+        "version": "0.1.6-beta",
+        "sha256": "4df452d05cbf6a272859e866efef925260f291cae5b38abce36b410275de5fd4"
+      },
+      {
+        "configuration": "debugRuntimeClasspath",
+        "name": "sdk",
+        "version": "0.1.6-beta",
+        "sha256": "5ae92841f30ee063a1b20f7aac63e62438494cbc9e4782a237123e4474e054ba"
+      }
+    ]
+  },
+  "publicBoundaryChecks": "passed; scoped mechanical checks of this exact candidate",
+  "mechanicalOnly": true,
+  "legalApprovalInferred": false,
+  "currentBuildPhoneBLEValidated": false,
+  "currentBuild24HourValidated": false,
+  "currentBuildFinalBinaryMacBLEValidated": false,
+  "currentBuildHistoryErasureHardwareValidated": false,
+  "currentBuildRawECGHardwareValidated": false,
+  "currentBuildUntestedReadsHardwareValidated": false
+}

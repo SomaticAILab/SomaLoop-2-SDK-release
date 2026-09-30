@@ -1,0 +1,19 @@
+{
+  "schema": "somaloop.release-index/v1",
+  "version": "0.1.6-beta",
+  "buildNumber": 20,
+  "buildRevision": "8730519afcdf94996c6bee5fdea74c586bf8e295e7421727ba446b0672d64cd6",
+  "sourceTree": "099c7df1e289cbe67de854188f2e35afdd611da5",
+  "sourceCommit": "f25b5b73183d9955ee439a40afd91cda61cfe91d",
+  "tag": "v0.1.6-beta-build20",
+  "prerelease": true,
+  "releaseURL": "https://github.com/SomaticAILab/SomaLoop-SDK-release/releases/tag/v0.1.6-beta-build20",
+  "assets": [
+    {
+      "name": "SomaLoop-SDK-0.1.6-beta-build20.zip",
+      "downloadURL": "https://github.com/SomaticAILab/SomaLoop-SDK-release/releases/download/v0.1.6-beta-build20/SomaLoop-SDK-0.1.6-beta-build20.zip",
+      "sha256": "615254f4684360d38828941662ecc024cd7c29ca4756b9b05c00c01c0e56f833",
+      "bytes": 2815932
+    }
+  ]
+}

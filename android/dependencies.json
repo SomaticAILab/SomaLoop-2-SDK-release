@@ -1,0 +1,43 @@
+{
+  "sdkVersion": "0.1.6-beta",
+  "buildNumber": 20,
+  "buildRevision": "8730519afcdf94996c6bee5fdea74c586bf8e295e7421727ba446b0672d64cd6",
+  "distribution": "SDK AARs are local; third-party dependencies are resolved by Gradle from Maven Central.",
+  "dependencies": [
+    {
+      "module": "sdk",
+      "group": "org.jetbrains.kotlinx",
+      "name": "kotlinx-coroutines-android",
+      "version": "1.9.0",
+      "scope": "compile"
+    },
+    {
+      "module": "sdk",
+      "group": "org.jetbrains.kotlinx",
+      "name": "kotlinx-serialization-json",
+      "version": "1.7.3",
+      "scope": "compile"
+    },
+    {
+      "module": "sdk",
+      "group": "org.jetbrains.kotlin",
+      "name": "kotlin-stdlib",
+      "version": "2.1.10",
+      "scope": "runtime"
+    },
+    {
+      "module": "experimental",
+      "group": "com.somaticai.somaloop",
+      "name": "sdk",
+      "version": "0.1.6-beta",
+      "scope": "compile"
+    },
+    {
+      "module": "experimental",
+      "group": "org.jetbrains.kotlin",
+      "name": "kotlin-stdlib",
+      "version": "2.1.10",
+      "scope": "runtime"
+    }
+  ]
+}

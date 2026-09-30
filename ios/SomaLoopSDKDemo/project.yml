@@ -1,0 +1,39 @@
+name: SomaLoopSDKDemo
+options:
+  deploymentTarget:
+    iOS: '15.0'
+packages:
+  SomaLoopSDK:
+    path: ../SomaLoopSDK-Package
+settings:
+  base:
+    SWIFT_VERSION: '5.10'
+    IPHONEOS_DEPLOYMENT_TARGET: '15.0'
+targets:
+  SomaLoopSDKDemo:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    dependencies:
+      - package: SomaLoopSDK
+        product: SomaLoopSDK
+      - package: SomaLoopSDK
+        product: SomaLoopExperimental
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.somaticai.somaloop.demo
+      TARGETED_DEVICE_FAMILY: '1,2'
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: SomaLoop SDK Demo
+        CFBundleShortVersionString: '0.1.6'
+        CFBundleVersion: '20'
+        NSBluetoothAlwaysUsageDescription: 通过蓝牙连接您选择的手环，读取设备数据并在本机保存原始采集。
+        UIBackgroundModes: [bluetooth-central]
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+schemes:
+  SomaLoopSDKDemo:
+    build:
+      targets:
+        SomaLoopSDKDemo: all

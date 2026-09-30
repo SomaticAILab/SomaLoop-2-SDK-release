@@ -1,0 +1,4 @@
+pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { maven { url=uri("../repository") }; google(); mavenCentral() } }
+rootProject.name="SomaLoopSDKDemo"
+include(":app")
