@@ -1,5 +1,7 @@
 # Somatic AI SDK · iOS
 
-版本 0.1.6-beta / build 20，最低 iOS 15。完整保留 `SomaLoopSDK-Package`，在 Xcode 的 Add Package Dependencies 中选择 Add Local。
+版本 0.1.6-beta / build 20，最低 iOS 15。本包是仅供内部评估与开发测试的私有候选，暂不公开发布。使用范围见[评估说明](../README.md)与 [SDK 评估许可](../LICENSE)。
 
-示例在 `SomaLoopSDKDemo`。接入与验收范围见[公开文档](https://github.com/SomaticAILab/SomaLoop-SDK-release#readme)，发布记录见[build 20](https://github.com/SomaticAILab/SomaLoop-SDK-release/releases/tag/v0.1.6-beta-build20)。
+完整保留 `SomaLoopSDK-Package`，在 Xcode 的 Add Package Dependencies 中选择 Add Local。示例在 `SomaLoopSDKDemo`；主库与研究库须来自同一构建。
+
+接入步骤见 [iOS 接入](../docs/iOS接入.md)，实际验证范围见[验收状态](../docs/验收状态.md)。完成构建或测试不构成生产、商业使用或对外分发授权。

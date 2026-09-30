@@ -2,6 +2,8 @@
 
 Somatic AI SDK 支持 Android API 26 及以上，包名保持 `com.somaticai.somaloop`。
 
+以下接入步骤仅用于获授权的内部评估与开发测试。当前交付为私有候选，使用范围见 [SDK 评估许可](../LICENSE)。
+
 ## 安装与构建
 
 随包 `android/SomaLoopSDKDemo` 通过相邻的 `repository` 使用本地 Maven 包；其他宿主按自己的目录调整路径。

@@ -1,6 +1,6 @@
 # Somatic AI SDK 版权与第三方告知
 
-Somatic AI SDK 由 Somatic AI 维护和分发。本发布包提供 SDK 二进制、接口文档、集成示例及配套工具，不包含 SDK 实现源码。SDK 二进制与随附示例的使用、集成和分发范围见 [SDK 许可](../LICENSE)。本告知不替代该许可，也不将第三方软件或设备的权利转移给 Somatic AI。
+Somatic AI SDK 由 Somatic AI 维护和提供。本交付包包含 SDK 二进制、接口文档与集成示例，不包含 SDK 实现源码。SDK 及随附材料仅供内部评估与开发测试；商业使用及任何对外分发须另行签署书面协议，具体范围见 [SDK 评估许可](../LICENSE)。本告知不替代该许可，也不将第三方软件或设备的权利转移给 Somatic AI。
 
 ## Android 第三方依赖
 
