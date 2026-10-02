@@ -1,0 +1,90 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.somaticai.somaloop",
+    "module": "experimental",
+    "version": "0.1.7",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.11.1"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseVariantReleaseApiPublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "com.somaticai.somaloop",
+          "module": "sdk",
+          "version": {
+            "requires": "0.1.7"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.1.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "experimental-0.1.7.aar",
+          "url": "experimental-0.1.7.aar",
+          "size": 3525,
+          "sha512": "2450c447d69265b7c0583ff88ad3082b632773cab7b844a8c3b90af0e783cf64aefba746661d67063644502eac309c5f63594da7994f40b4102f8b9f00ab7442",
+          "sha256": "4df452d05cbf6a272859e866efef925260f291cae5b38abce36b410275de5fd4",
+          "sha1": "5c564f33485fecd10205bbbc3b7a0a62d7e26f89",
+          "md5": "14c68c0a9038fe7853c14b79dc33461d"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseRuntimePublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "com.somaticai.somaloop",
+          "module": "sdk",
+          "version": {
+            "requires": "0.1.7"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.1.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "experimental-0.1.7.aar",
+          "url": "experimental-0.1.7.aar",
+          "size": 3525,
+          "sha512": "2450c447d69265b7c0583ff88ad3082b632773cab7b844a8c3b90af0e783cf64aefba746661d67063644502eac309c5f63594da7994f40b4102f8b9f00ab7442",
+          "sha256": "4df452d05cbf6a272859e866efef925260f291cae5b38abce36b410275de5fd4",
+          "sha1": "5c564f33485fecd10205bbbc3b7a0a62d7e26f89",
+          "md5": "14c68c0a9038fe7853c14b79dc33461d"
+        }
+      ]
+    }
+  ]
+}

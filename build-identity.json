@@ -1,7 +1,5 @@
 {
-  "version": "0.1.6-beta",
-  "buildNumber": 20,
-  "buildRevision": "8730519afcdf94996c6bee5fdea74c586bf8e295e7421727ba446b0672d64cd6",
-  "sourceTree": "099c7df1e289cbe67de854188f2e35afdd611da5",
-  "sourceCommit": "f25b5b73183d9955ee439a40afd91cda61cfe91d"
+  "version": "0.1.7",
+  "buildNumber": 21,
+  "buildRevision": "76211ce3ca82b2510252fa4f0c16a2853399d2b49d298d09c55814c3347f4912"
 }

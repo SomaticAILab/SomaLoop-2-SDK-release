@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "scope": "Public deliverable; nested archive contents, filenames, text and decoded binary strings",
+  "counts": {
+    "filesIncludingArchiveMembers": 598,
+    "textFiles": 72,
+    "otherBinaryFiles": 47,
+    "archives": 5,
+    "jvmClasses": 470,
+    "binaryPlists": 4
+  },
+  "unexpectedCount": 0,
+  "allowedCount": 0,
+  "passed": true,
+  "hardwareExceptionsAllowed": false,
+  "coverageLimits": "Decoded text/metadata and binary strings; no OCR, visual logo recognition, originality or legal-rights determination.",
+  "scannerSHA256": "74c71def47745943f614e5bfa9c705099ed524a5c94eacb4a6559779e0388ca7",
+  "inputManifestSHA256": "9179dbb0d2a56ecc5cc3d1dac0015e4166dac275f0ba6f3f854ff3f74a7ed32f",
+  "inputFiles": 115,
+  "policy": "no static hardware-name exceptions; third-party notices retained"
+}

@@ -1,16 +1,16 @@
 // swift-interface-format-version: 1.0
-// swift-compiler-version: Apple Swift version 6.1.2 effective-5.10 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)
-// swift-module-flags: -target arm64-apple-ios15.0-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name SomaLoopExperimental
-// swift-module-flags-ignorable: -no-verify-emitted-module-interface -interface-compiler-version 6.1.2
+// swift-compiler-version: Apple Swift version 6.4 effective-5.10 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)
+// swift-module-flags: -target arm64-apple-ios15.0-simulator -enable-objc-interop -enable-library-evolution -language-mode 5 -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name SomaLoopExperimental
+// swift-module-flags-ignorable: -no-verify-emitted-module-interface -formal-cxx-interoperability-mode=off -interface-compiler-version 6.4
 import SomaLoopSDK
 import Swift
 import _Concurrency
 import _StringProcessing
 import _SwiftConcurrencyShims
 public struct SomaLoopResearch {
-  public typealias Stream = SomaLoopSDK.ResearchStream
-  public init(client: SomaLoopSDK.SomaLoopClient)
-  public func start(_ stream: SomaLoopExperimental.SomaLoopResearch.Stream, durationSeconds: Swift.Int = 60) async throws
-  public func recordECG(seconds: Swift.Int = 60) async throws -> SomaLoopSDK.ECGRecording
+  public typealias Stream = SomaLoopSDK::ResearchStream
+  public init(client: SomaLoopSDK::SomaLoopClient)
+  public func start(_ stream: SomaLoopExperimental::SomaLoopResearch.SomaLoopExperimental::Stream, durationSeconds: Swift::Int = 60) async throws
+  public func recordECG(seconds: Swift::Int = 60) async throws -> SomaLoopSDK::ECGRecording
   public func stop() async
 }

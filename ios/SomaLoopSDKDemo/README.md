@@ -1,5 +1,7 @@
-# Somatic AI SDK · iOS 示例
+# Somatic AI SDK Demo · iOS
 
-需要 Xcode 与 XcodeGen。在本目录执行 `xcodegen generate`，然后打开生成的 `SomaLoopSDKDemo.xcodeproj`。示例使用相邻目录内的本地二进制 Swift Package。
+版本：0.1.7 / build 21。Demo 使用旁边的 `SomaLoopSDK-Package`。
 
-手机安装前在 Xcode 选择自己的签名团队。蓝牙连接、采集和清除由使用者在确认设备与数据范围后显式发起；构建成功不代表手机 BLE 或长期运行已验收。
+在本目录运行 `xcodegen generate`，用 Xcode 打开工程并选择运行目标。部署到手机时设置签名团队并授予蓝牙权限。
+
+接口与参数见 [iOS 接入](../../docs/iOS接入.md) 和[功能支持范围](../../docs/验收状态.md)。

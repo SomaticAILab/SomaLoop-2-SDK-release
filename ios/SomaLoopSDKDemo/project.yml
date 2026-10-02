@@ -25,15 +25,28 @@ targets:
     info:
       path: Info.plist
       properties:
-        CFBundleDisplayName: SomaLoop SDK Demo
-        CFBundleShortVersionString: '0.1.6'
-        CFBundleVersion: '20'
+        CFBundleDisplayName: Somatic AI SDK Demo
+        CFBundleShortVersionString: '0.1.7'
+        CFBundleVersion: '21'
         NSBluetoothAlwaysUsageDescription: 通过蓝牙连接您选择的手环，读取设备数据并在本机保存原始采集。
         UIBackgroundModes: [bluetooth-central]
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+  BinaryIntegrationTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: SomaLoopSDKDemo
+      - package: SomaLoopSDK
+        product: SomaLoopSDK
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.somaticai.somaloop.binarytests
+      GENERATE_INFOPLIST_FILE: YES
 schemes:
   SomaLoopSDKDemo:
     build:
       targets:
         SomaLoopSDKDemo: all
+    test:
+      targets: [BinaryIntegrationTests]

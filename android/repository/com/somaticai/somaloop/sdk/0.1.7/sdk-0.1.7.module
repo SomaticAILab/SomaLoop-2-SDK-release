@@ -1,0 +1,104 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.somaticai.somaloop",
+    "module": "sdk",
+    "version": "0.1.7",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.11.1"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseVariantReleaseApiPublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-android",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-json",
+          "version": {
+            "requires": "1.7.3"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.1.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "sdk-0.1.7.aar",
+          "url": "sdk-0.1.7.aar",
+          "size": 983973,
+          "sha512": "d528a5906b0057fad14897b906a1dd55d4ddb3431e151e14ed265e9a54802261320b6fd355dc6ccdf74d90f234cdef228da60ff76cc62b1fce5956ea03eb39ef",
+          "sha256": "8de1df9a2222217df2f1081c1670835f11a73b1d08c345fbf8dc3e8444bfa24e",
+          "sha1": "b83a9a866d1058f12986e5cb49d68a67c8f5af16",
+          "md5": "2a0eea611e45224e614f247ccd3a9375"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseRuntimePublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-android",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-json",
+          "version": {
+            "requires": "1.7.3"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.1.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "sdk-0.1.7.aar",
+          "url": "sdk-0.1.7.aar",
+          "size": 983973,
+          "sha512": "d528a5906b0057fad14897b906a1dd55d4ddb3431e151e14ed265e9a54802261320b6fd355dc6ccdf74d90f234cdef228da60ff76cc62b1fce5956ea03eb39ef",
+          "sha256": "8de1df9a2222217df2f1081c1670835f11a73b1d08c345fbf8dc3e8444bfa24e",
+          "sha1": "b83a9a866d1058f12986e5cb49d68a67c8f5af16",
+          "md5": "2a0eea611e45224e614f247ccd3a9375"
+        }
+      ]
+    }
+  ]
+}

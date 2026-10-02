@@ -68,7 +68,7 @@ import SomaLoopExperimental
 struct DemoView:View {
     @ObservedObject var model:DemoModel
     var body:some View{NavigationView{Form{
-        Section{Text("映身智能 / SomaticAI").font(.headline);Text("SomaLoop SDK · \(SomaLoop.version)").foregroundColor(.secondary);Text("本机保存 · iOS 24 小时长测待验收").font(.caption)}
+        Section{Text("Somatic AI").font(.headline);Text("Somatic AI SDK · \(SomaLoop.version)").foregroundColor(.secondary);Text("本机保存 · iOS 24 小时长测待验收").font(.caption)}
         Section("设备 · \(model.deviceState.connection.rawValue)"){
             Button("扫描附近的手环",action:model.scan).demoAvailability(model.disabledReason(.scan))
             ForEach(model.devices,id:\.id){d in Button(action:{model.connect(d)}){VStack(alignment:.leading){Text("手环 · \(d.id.suffix(6).uppercased())");Text((d.rssi == 127 ? "信号未知":"\(d.rssi) dBm") + " · \(d.id)").font(.caption).foregroundColor(.secondary)}}.demoAvailability(model.disabledReason(.connect))}
@@ -104,7 +104,7 @@ struct DemoView:View {
             Text("设备操作按连接、忙碌与能力状态开放；时间写入按精确设备证据开放，其他设置仍等待验证。").font(.caption)
         }
         Section("状态"){Text(model.status).font(.footnote).textSelection(.enabled)}
-    }.navigationTitle("SomaLoop SDK Demo")}.sheet(isPresented:Binding(get:{model.exportURL != nil},set:{if !$0{model.exportURL=nil}})){if let url=model.exportURL{ExportPicker(url:url)}}}
+    }.navigationTitle("Somatic AI SDK Demo")}.sheet(isPresented:Binding(get:{model.exportURL != nil},set:{if !$0{model.exportURL=nil}})){if let url=model.exportURL{ExportPicker(url:url)}}}
 }
 struct ExportPicker:UIViewControllerRepresentable {
     let url:URL

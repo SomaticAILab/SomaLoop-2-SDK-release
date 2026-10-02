@@ -1,8 +1,6 @@
 # Android / Java 接入
 
-Somatic AI SDK 支持 Android API 26 及以上，包名保持 `com.somaticai.somaloop`。
-
-以下接入步骤仅用于获授权的内部评估与开发测试。当前交付为私有候选，使用范围见 [SDK 评估许可](../LICENSE)。
+Somatic AI SDK 0.1.7 / build 21 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
 
 ## 安装与构建
 
@@ -20,16 +18,16 @@ dependencyResolutionManagement {
 
 // app/build.gradle.kts
 dependencies {
-    implementation("com.somaticai.somaloop:sdk:0.1.6-beta")
-    implementation("com.somaticai.somaloop:experimental:0.1.6-beta") // 研究入口，可选
+    implementation("com.somaticai.somaloop:sdk:0.1.7")
+    implementation("com.somaticai.somaloop:experimental:0.1.7") // 研究入口，可选
 }
 ```
 
-当前分发方式是本地 Maven 仓库，没有远程 Maven 发布地址。主库、研究库与依赖清单须来自同一完整包。版本号相同时也可能有不同 build；替换旧包后核对 `SomaLoop.buildRevision`，不要只依赖 Gradle 坐标判断新旧。
+升级时替换完整交付包，保持主库、研究库与依赖清单版本一致。可用 `SomaLoop.version`、`SomaLoop.buildRevision` 查看版本和构建号。
 
 Demo 工具链为 JDK 17、Gradle 8.11.1、AGP 8.10.1、Kotlin 2.1.10，compile/target SDK 36。包内运行依赖见 `android/dependencies.json`；宿主统一已有 Kotlin/协程依赖版本，避免重复引入 JAR。Android Studio、平台 SDK 和构建插件需要自行准备。
 
-在 `android/SomaLoopSDKDemo` 执行 `./gradlew :app:testDebugUnitTest :app:assembleDebug`。缓存齐全时可选 `--offline`。构建成功与手机 BLE 验收分别记录。
+在 `android/SomaLoopSDKDemo` 执行 `./gradlew :app:assembleDebug`，或通过 Android Studio 运行 Demo。
 
 ## 权限、服务与连接
 
@@ -83,11 +81,11 @@ suspend fun readTemperature(client: SomaLoopClient): HistoryBatch {
     return batch
 }
 
-suspend fun readExperimentalSport(client: SomaLoopClient): HistoryBatch =
-    client.readHistoryBatch(HistoryKind.sport, allowExperimental = true)
+suspend fun readSport(client: SomaLoopClient): HistoryBatch =
+    client.readHistoryBatch(HistoryKind.sport)
 ```
 
-未验证的只读尝试需宿主先准入固件，再显式 `allowUntested = true`。闹钟可用 `readSettings(SettingKind.alarms, allowExperimental = true)`；不完整时抛错，部分记录改用历史批次。参数不放行 `unsupported`，不授予设置写入、校时、删除或研究流权限。
+SDK 支持有效四字节 BCD 固件版本 ≥0.0.8.8，全部 15 类历史及闹钟读取为 C，默认直接读取。闹钟用 `readSettings(SettingKind.alarms)`；不完整时抛错，需要保留部分记录时使用历史批次。各接口的固件范围和读取选项见 [API 与错误码](API与错误码.md)。
 
 ## Java
 
@@ -113,7 +111,7 @@ sdk.readHistoryBatch(HistoryKind.temperature, false,
     });
 ```
 
-实验读取用 `sdk.readHistoryBatch(kind, false, true, callback)`。未验证读取用 `sdk.readHistoryBatch(kind, false, false, true, callback)`，最后的布尔值为 `allowUntested`。完整同步使用 `syncHistoryRecords(kind, options, callback)`，或带 `allowUntested` 的重载。
+当前支持固件的普通读取用 `sdk.readHistoryBatch(kind, false, callback)`。带 `allowExperimental` / `allowUntested` 的重载保留兼容，最后的布尔值 `allowUntested` 不绕过最低固件或未支持功能。完整同步使用 `syncHistoryRecords(kind, options, callback)`，同样保留带读取开关的重载。
 
 `observe(listener)` 返回可关闭订阅。包装器的 `close()` 只取消自己的任务，不关闭共享客户端；取消可能不再触发成功/失败回调，宿主还须处理所发起操作的停止与结果查询。
 
@@ -121,14 +119,18 @@ sdk.readHistoryBatch(HistoryKind.temperature, false,
 
 ```kotlin
 import com.somaticai.somaloop.experimental.SomaLoopResearch
+import com.somaticai.somaloop.receptionSummary
 
 suspend fun recordRawECG(client: SomaLoopClient): ECGRecording {
     val recording = SomaLoopResearch(client).recordECG(seconds = 60)
     println("${recording.frames.size} frames; stop=${recording.stopConfirmed}")
+    println(recording.receptionSummary)
     return recording
 }
 ```
 
 Java 使用 `sdk.recordECG(60, callback)`，回调为 `Callback<ECGRecording>`。合法时长 30 至 300 秒。直接调用 Kotlin client 的研究方法需 `@OptIn(SomaLoopClient.ResearchAPI::class)`，这属于编译期声明，与固件实验读取开关不同。
 
-保留 `frames`、`interruption`、`stopConfirmed`；空集合或部分集合均不能写成完整录制。原始计数没有已验证的采样率、增益或医学准确性。完整字段和平台差异见[数据语义](数据与时间语义.md)。
+`frames` 保存设备原始计数与序号；`recording.receptionSummary` 统计实际接收样本数和相邻序号不连续次数。`sampleCount` 也是扩展属性，使用时导入 `com.somaticai.somaloop.sampleCount`。Java 使用 `ApiViews.ecgReceptionSummary(recording)` 获取接收摘要。
+
+保存完整或部分结果，并分别处理 `interruption` 和 `stopConfirmed`：前者描述录制中断，后者表示停止是否得到确认。请求时长与接收样本数应分别保存。字段定义见 [数据语义](数据与时间语义.md)。

@@ -1,5 +1,5 @@
-# Somatic AI SDK · Android 示例
+# Somatic AI SDK Demo · Android
 
-需要 JDK 17 与 Android SDK。在本目录配置自己的 `local.properties` 或 SDK 环境变量，然后执行 `./gradlew :app:assembleDebug`。示例从 `../repository` 使用本轮 SDK AAR，不依赖 SDK 实现源码。
+版本：0.1.7 / build 21。用 Android Studio 打开本目录，或运行 `./gradlew :app:assembleDebug`。Demo 使用旁边 `repository` 中的 Maven 二进制。
 
-构建产物仅供本地测试，不属于发布包。设备连接、采集和清除由使用者显式发起；构建成功不代表手机 BLE 或长期运行已验收。
+授予蓝牙权限后选择设备。接口与参数见 [Android / Java 接入](../../docs/Android接入.md) 和[功能支持范围](../../docs/验收状态.md)。

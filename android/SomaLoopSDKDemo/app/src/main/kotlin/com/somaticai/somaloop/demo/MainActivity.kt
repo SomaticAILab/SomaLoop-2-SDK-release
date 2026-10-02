@@ -125,7 +125,7 @@ class MainActivity:Activity(){
         fun button(label:String,action:()->Unit):Button=Button(this).apply{text=label;setOnClickListener{action()};panel.addView(this)}
         fun supportedButton(label:String,capability:String?,experimental:Boolean=false,action:()->Unit){val b=button(label,action);val reason=text("采集服务尚未连接",13f);b.isEnabled=false;capabilityButtons+=CapabilityButton(b,reason,capability,experimental)}
         fun recoveryButton(label:String,action:()->Unit){val b=button(label,action);b.isEnabled=false;recoveryButtons+=b to text("采集服务尚未连接",13f)}
-        text("SomaLoop SDK Demo",26f);text("映身智能 / SomaticAI · ${SomaLoop.version}");text("本机保存 · Android 24 小时长测待验收",13f)
+        text("Somatic AI SDK Demo",26f);text("Somatic AI · ${SomaLoop.version}");text("本机保存 · Android 24 小时长测待验收",13f)
         status=text("请授权蓝牙后扫描，并按设备标识后缀选择手环");stats=text("尚未开始采集")
         button("授权并扫描手环"){if(permissionsGranted())scan()else requestPermissions(requiredPermissions(),101)}
         devices=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};panel.addView(devices)
