@@ -73,3 +73,22 @@ Somatic AI SDK 的 Swift 方法使用 actor 和 `async/await`；Kotlin 读取/�
 Swift 使用 `SDKError`；Kotlin 的 `SDKException.code` 和 Java 回调使用 `ErrorCode`。不要以自由文本匹配错误类别。部分结果对象可能同时含 `interruption`，方法返回成功不代表业务结果完整。
 
 详见[数据语义](数据与时间语义.md)、[采集与马达](采集与马达节拍.md)及[实验性历史清除](历史清除.md)。
+
+## 2026-10-02 · 仅源码的新接口与行为预告
+
+**以下不属于本分发包 0.1.6-beta / build 20 的接口或运行时行为。** 原 build 20 的上方入口表、固件/能力及设置说明继续有效；须取得重新构建并验证的新 SDK，按新构建身份核对主库/研究库，并重新编译 Swift／Kotlin／Java 消费者后，才可使用新增入口。
+
+| 源码变化 | 升级后的契约与边界 |
+| --- | --- |
+| 最低固件与读取 | 仅有效四字节 BCD ≥0.0.8.8，含最低且无上限；全部 15 类历史及闹钟读取为 `compatibleCandidate`。该状态表示兼容路径，不等于所有内容、平台或医学准确性均已验证；较高固件不自动拥有精确联合解析/时间配置。 |
+| 历史清除 | 仅 0.0.8.8 保留实验候选；新增 `prepareHistoryErasure(..., allowExperimental)` 和 `eraseHistory(..., confirm, allowExperimental)`。两阶段分别显式启用，执行另需确认；旧签名在发帧前拒绝。原 build 20 未获得这一默认关闭保护，仍适用原接口。 |
+| 马达待停止 | `pendingHaptics`、`abandonPendingHaptics`、带会话 ID 的 `exportHaptics`；待处理按设备保存。审计放弃要求理由及明确确认，不发帧、不证明停止。精确原 MAC/固件/日期恢复保护保留。 |
+| 联合采集 | 健康/续期以有效联合帧为准，独立 PPG 另行统计；每次联合启动首次帧宽限 15 秒。分类记录 SDK 断连请求和传输通知，不能相加当作物理断连数。停止/识别 ACK 缺失不能用持续数据代替确认。 |
+| 附加读取视图 | `batteryReading`、`measurementValues`、Swift ECG `frames` 和双端 `receptionSummary`／`sampleCount`；Java 使用 `ApiViews`。不补造读取时间、标准 HRV、采样率、期望样本数或录制完整性。 |
+| 能力/模式/参数 | 可读 `historyByKind`、显式 `serverMode`、`HapticPattern.validationIssues`；旧能力键、模式序列化与错误码保留。断连/关闭中普通能力不可用，马达还要求前台，实际操作仍检查互斥。 |
+| 设备时钟 | `hasLargeOffsetWarning` 仅在已知绝对钟差至少 1 小时时标记；时区未知保持未知。先保存历史和校时前上下文，再显式校时，不统一平移旧历史。 |
+| 历史上传 | 显式 `SomaContractRevision`／`historyForContract` 保留旧默认；选择已核对的新契约后开放 sleepDebug/systemEvents 原始记录，缺年/秒的 powerDebug 仍以日历精度不足拒绝。 |
+| 导出与重放 | 相同已确认停止且无 cleanup 的最终状态稳定导出；活动前缀不用于反复最终上传。`ReplayMismatch`／`lastMismatch` 提供零基索引及期望/实际命令，数学样例不属于设备验收。 |
+| 品牌与步数目标 | 源码展示统一 Somatic AI SDK / Somatic AI，模块/包名/坐标不改。删除 `stepGoal` 的迁移要求保持；本包仍含不可调用的旧枚举。 |
+
+本轮没有新二进制发布。律师确认实际许可主体及四项补充条款仍待完成，正式 `LICENSE` 保持原样；英文文档、远程二进制 Swift Package 与托管 Maven 未交付。源码测试、模拟传输与旧制品的 CI／消费者证据分别绑定其自身身份，不能相互替代。完整区别见[仓库变更记录](../CHANGELOG.md)和[文档来源记录](../documentation-revision.json)。
