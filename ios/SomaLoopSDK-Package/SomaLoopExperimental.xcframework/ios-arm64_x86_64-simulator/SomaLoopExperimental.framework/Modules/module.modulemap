@@ -1,3 +1,4 @@
 framework module SomaLoopExperimental {
   header "SomaLoopExperimental-Swift.h"
+  requires objc
 }

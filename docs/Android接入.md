@@ -1,6 +1,6 @@
 # Android / Java 接入
 
-Somatic AI SDK 0.1.7 / build 21 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
+SomaLoop 2 SDK 0.1.9 / build 24 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
 
 ## 安装与构建
 
@@ -18,12 +18,12 @@ dependencyResolutionManagement {
 
 // app/build.gradle.kts
 dependencies {
-    implementation("com.somaticai.somaloop:sdk:0.1.7")
-    implementation("com.somaticai.somaloop:experimental:0.1.7") // 研究入口，可选
+    implementation("com.somaticai.somaloop:sdk:0.1.9")
+    implementation("com.somaticai.somaloop:experimental:0.1.9") // 研究入口，可选
 }
 ```
 
-升级时替换完整交付包，保持主库、研究库与依赖清单版本一致。可用 `SomaLoop.version`、`SomaLoop.buildRevision` 查看版本和构建号。
+升级时替换完整交付包，保持主库、研究库与依赖清单版本一致。`SomaLoop.version` 为版本号，`SomaLoop.buildRevision` 为源码与构建输入指纹；数字构建号见随包 `build-identity.json` 的 `buildNumber`。
 
 Demo 工具链为 JDK 17、Gradle 8.11.1、AGP 8.10.1、Kotlin 2.1.10，compile/target SDK 36。包内运行依赖见 `android/dependencies.json`；宿主统一已有 Kotlin/协程依赖版本，避免重复引入 JAR。Android Studio、平台 SDK 和构建插件需要自行准备。
 
@@ -70,6 +70,10 @@ suspend fun connectSelected(client: SomaLoopClient, device: DiscoveredDevice) {
 
 自建服务可用 `SomaLoopClient(context, storageRoot)`，但须承担相同权限、通知和生命周期责任。用 `setHostBackground(true/false)` 上报实际前后台，整个服务结束使用时才 `shutdown()`。
 
+每个实际 `storageRoot` 只供一个客户端使用，多个客户端使用不同目录。交接同一目录前，在协程中等待原客户端的 `shutdown()` 完成；`shutdown()` 完成本轮停止尝试及会话存储关闭后释放目录；交接前也要等待宿主发起的其他 SDK 调用结束。目录被占用或失效时操作返回 `storageFailure`。保留 `.somatic-storage.lock`、会话目录及待停止记录，不通过删除文件解除占用；锁文件存在本身不表示仍被占用。目录保护独立于设备身份核对，交付状态见[0.1.8 变更](../CHANGELOG.md)。
+
+恢复待处理会话使用 `resumePendingSession()`；多条会话时用 `resumeSession(directory)` 明确选择。`storageRoot` 必须对应原会话的父目录，会话须为它的直接子目录，符号链接别名按实际目录核对。停止意图由恢复流程处理，恢复继续核对原设备 MAC、固件及日期。
+
 ## Kotlin 读取
 
 ```kotlin
@@ -113,7 +117,7 @@ sdk.readHistoryBatch(HistoryKind.temperature, false,
 
 当前支持固件的普通读取用 `sdk.readHistoryBatch(kind, false, callback)`。带 `allowExperimental` / `allowUntested` 的重载保留兼容，最后的布尔值 `allowUntested` 不绕过最低固件或未支持功能。完整同步使用 `syncHistoryRecords(kind, options, callback)`，同样保留带读取开关的重载。
 
-`observe(listener)` 返回可关闭订阅。包装器的 `close()` 只取消自己的任务，不关闭共享客户端；取消可能不再触发成功/失败回调，宿主还须处理所发起操作的停止与结果查询。
+`observe(listener)` 返回可关闭订阅。包装器的 `close()` 只取消自己的任务，不关闭共享客户端，也不释放它的 `storageRoot`；取消可能不再触发成功/失败回调，宿主还须处理所发起操作的停止与结果查询。整个服务结束使用时，在协程中等待客户端 `shutdown()` 完成。
 
 ## 限时原始 ECG
 
@@ -134,3 +138,19 @@ Java 使用 `sdk.recordECG(60, callback)`，回调为 `Callback<ECGRecording>`�
 `frames` 保存设备原始计数与序号；`recording.receptionSummary` 统计实际接收样本数和相邻序号不连续次数。`sampleCount` 也是扩展属性，使用时导入 `com.somaticai.somaloop.sampleCount`。Java 使用 `ApiViews.ecgReceptionSummary(recording)` 获取接收摘要。
 
 保存完整或部分结果，并分别处理 `interruption` 和 `stopConfirmed`：前者描述录制中断，后者表示停止是否得到确认。请求时长与接收样本数应分别保存。字段定义见 [数据语义](数据与时间语义.md)。
+
+升级至 0.1.8 时，主库、实验库和消费者请使用同一构建并重新编译。ECG 模型保留旧 Java 普通三参摘要及九参记录构造和 `copy` 入口；已编译 Kotlin 的默认参数或 `copy$default` 桥接不保证二进制兼容。
+
+## 0.1.9：独立 ACC、电量与接触状态
+
+在连接就绪且客户端空闲时，由宿主管理的协程调用：
+
+```kotlin
+val battery = client.readBattery()
+val contact = client.readWearState(5.0)
+val session = client.startCapture(CaptureMode.accOnly, 3600.0)
+// 宿主需要停止时：
+client.stopCapture()
+```
+
+Java 对应入口为 `SomaLoopJava.readBattery(callback)`、`readWearState(5.0, callback)`，回调类型分别为 `BatteryReading` 和 `WearState`。独立 ACC 支持持久会话、导出及同身份恢复，Demo 提供相应启动按钮和计数。主动接触检查会短暂启动 PPG；观察时长不含写入与关闭确认时间。采集中上述两个读取入口仍返回 `busy`，未知充电码、电压单位及佩戴事件不会猜测。升级须重新编译消费者并补齐新增枚举分支。

@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "scope": "Public deliverable; nested archive contents, filenames, text and decoded binary strings",
   "counts": {
-    "filesIncludingArchiveMembers": 598,
-    "textFiles": 72,
-    "otherBinaryFiles": 47,
-    "archives": 5,
-    "jvmClasses": 470,
+    "filesIncludingArchiveMembers": 3260,
+    "textFiles": 100,
+    "otherBinaryFiles": 60,
+    "archives": 13,
+    "jvmClasses": 3083,
     "binaryPlists": 4
   },
   "unexpectedCount": 0,
@@ -14,8 +14,8 @@
   "passed": true,
   "hardwareExceptionsAllowed": false,
   "coverageLimits": "Decoded text/metadata and binary strings; no OCR, visual logo recognition, originality or legal-rights determination.",
-  "scannerSHA256": "74c71def47745943f614e5bfa9c705099ed524a5c94eacb4a6559779e0388ca7",
-  "inputManifestSHA256": "9179dbb0d2a56ecc5cc3d1dac0015e4166dac275f0ba6f3f854ff3f74a7ed32f",
-  "inputFiles": 115,
+  "scannerSHA256": "b262113e7f756b28466244e49285e1519af9e3b475dbf453b2c78dad5da873b3",
+  "inputManifestSHA256": "a8a404d97ecd33291d19fb308428e8dc5ec84708f63c01b6ae6d3d32e9c65251",
+  "inputFiles": 122,
   "policy": "no static hardware-name exceptions; third-party notices retained"
 }

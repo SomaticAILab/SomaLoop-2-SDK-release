@@ -55,7 +55,7 @@ import SomaLoopExperimental
     }
     func scan(){run(.scan){self.devices=[];try await self.client.scan();self.status="扫描中，选择设备编号连接"}}
     func connect(_ d:DiscoveredDevice){run(.connect){await self.client.stopScan();try await self.client.connect(d);self.status="已读取设备身份与固件"}}
-    func start(_ mode:CaptureMode){run(.capture(mode == .ppgOnly ? "ppgOnly":"ppgAccPaired")){self.manifest=try await self.client.startCapture(mode:mode);self.status="计划采集 24 小时，实际连续性以日志为准"}}
+    func start(_ mode:CaptureMode){run(.capture(mode == .accOnly ? "rawACC" : mode == .ppgOnly ? "ppgOnly":"ppgAccPaired")){self.manifest=try await self.client.startCapture(mode:mode);self.status="计划采集 24 小时，实际连续性以日志为准"}}
     func stop(){run(.stopCapture){try await self.client.stopCapture();self.manifest=await self.client.currentSession();self.status=self.manifest?.stopConfirmed==true ? "手环已确认停止":"停止意图已保存，等待设备关闭确认"}}
     func export(){run(.exportCapture){let root=FileManager.default.temporaryDirectory.appendingPathComponent("SomaLoopExports");self.exportURL=try await self.client.exportSession(to:root);self.status="已生成带 SHA-256 校验值的快照"}}
 
@@ -68,7 +68,7 @@ import SomaLoopExperimental
 struct DemoView:View {
     @ObservedObject var model:DemoModel
     var body:some View{NavigationView{Form{
-        Section{Text("Somatic AI").font(.headline);Text("Somatic AI SDK · \(SomaLoop.version)").foregroundColor(.secondary);Text("本机保存 · iOS 24 小时长测待验收").font(.caption)}
+        Section{Text("SomaLoop 2 SDK").font(.headline);Text("版本 \(SomaLoop.version)").foregroundColor(.secondary);Text("本机保存 · iOS 24 小时长测待验收").font(.caption)}
         Section("设备 · \(model.deviceState.connection.rawValue)"){
             Button("扫描附近的手环",action:model.scan).demoAvailability(model.disabledReason(.scan))
             ForEach(model.devices,id:\.id){d in Button(action:{model.connect(d)}){VStack(alignment:.leading){Text("手环 · \(d.id.suffix(6).uppercased())");Text((d.rssi == 127 ? "信号未知":"\(d.rssi) dBm") + " · \(d.id)").font(.caption).foregroundColor(.secondary)}}.demoAvailability(model.disabledReason(.connect))}
@@ -77,9 +77,10 @@ struct DemoView:View {
         Section("原始采集"){
             Button("开始 PPG-only · 24 小时",action:{model.start(.ppgOnly)}).demoAvailability(model.disabledReason(.capture("ppgOnly")))
             Button("开始 PPG + ACC · 24 小时",action:{model.start(.paired)}).demoAvailability(model.disabledReason(.capture("ppgAccPaired")))
+            Button("开始独立 ACC · 24 小时",action:{model.start(.accOnly)}).demoAvailability(model.disabledReason(.capture("rawACC")))
             if let health=model.health{Text("\(health.state.rawValue) · \(health.reason)").font(.caption)}
             Button("停止采集",role:.destructive,action:model.stop).demoAvailability(model.disabledReason(.stopCapture))
-            if let s=model.manifest{Text("\(s.mode.title) · \(s.status)");Text("PPG 包：\(s.stats.ppgPackets) · 样本：\(s.stats.ppgSamples)");Text("联合帧：\(s.stats.pairedFrames) · PPG：\(s.stats.pairedPPG) · MEMS：\(s.stats.memsTriples)");Text("两路数组独立保存，没有逐点时间戳或一一配对。").font(.caption)}
+            if let s=model.manifest{Text("\(s.mode.title) · \(s.status)");Text("ACC 包：\(s.stats.accPackets ?? 0) · 样本：\(s.stats.accSamples ?? 0)");Text("PPG 包：\(s.stats.ppgPackets) · 样本：\(s.stats.ppgSamples)");Text("联合帧：\(s.stats.pairedFrames) · PPG：\(s.stats.pairedPPG) · MEMS：\(s.stats.memsTriples)");Text("两路数组独立保存，没有逐点时间戳或一一配对。").font(.caption)}
             Button("导出会话快照",action:model.export).demoAvailability(model.disabledReason(.exportCapture))
         }
         Section("马达振动 · 振动节拍") {
@@ -104,7 +105,7 @@ struct DemoView:View {
             Text("设备操作按连接、忙碌与能力状态开放；时间写入按精确设备证据开放，其他设置仍等待验证。").font(.caption)
         }
         Section("状态"){Text(model.status).font(.footnote).textSelection(.enabled)}
-    }.navigationTitle("Somatic AI SDK Demo")}.sheet(isPresented:Binding(get:{model.exportURL != nil},set:{if !$0{model.exportURL=nil}})){if let url=model.exportURL{ExportPicker(url:url)}}}
+    }.navigationTitle("SomaLoop 2 SDK Demo")}.sheet(isPresented:Binding(get:{model.exportURL != nil},set:{if !$0{model.exportURL=nil}})){if let url=model.exportURL{ExportPicker(url:url)}}}
 }
 struct ExportPicker:UIViewControllerRepresentable {
     let url:URL

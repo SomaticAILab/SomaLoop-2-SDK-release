@@ -125,12 +125,13 @@ class MainActivity:Activity(){
         fun button(label:String,action:()->Unit):Button=Button(this).apply{text=label;setOnClickListener{action()};panel.addView(this)}
         fun supportedButton(label:String,capability:String?,experimental:Boolean=false,action:()->Unit){val b=button(label,action);val reason=text("采集服务尚未连接",13f);b.isEnabled=false;capabilityButtons+=CapabilityButton(b,reason,capability,experimental)}
         fun recoveryButton(label:String,action:()->Unit){val b=button(label,action);b.isEnabled=false;recoveryButtons+=b to text("采集服务尚未连接",13f)}
-        text("Somatic AI SDK Demo",26f);text("Somatic AI · ${SomaLoop.version}");text("本机保存 · Android 24 小时长测待验收",13f)
+        text("SomaLoop 2 SDK Demo",26f);text("${SomaLoop.product} · ${SomaLoop.version}");text("本机保存 · Android 24 小时长测待验收",13f)
         status=text("请授权蓝牙后扫描，并按设备标识后缀选择手环");stats=text("尚未开始采集")
         button("授权并扫描手环"){if(permissionsGranted())scan()else requestPermissions(requiredPermissions(),101)}
         devices=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};panel.addView(devices)
         supportedButton("PPG-only · 24 小时","ppgOnly"){start(CaptureMode.ppgOnly)}
         supportedButton("PPG + ACC · 24 小时","ppgAccPaired"){start(CaptureMode.paired)}
+        supportedButton("独立 ACC · 24 小时","rawACC"){start(CaptureMode.accOnly)}
         recoveryButton("停止采集"){runDevice{sdk().stopCapture();status.text="停止意图已保存，请核对停止确认状态"}}
         recoveryButton("恢复待处理会话"){runDevice{if(!sdk().resumePendingSession())status.text="没有待恢复会话"}}
         button("导出会话 ZIP"){run{snapshot=sdk().exportSession(File(cacheDir,"SomaLoopExports"));startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).setType("application/zip").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE,"SomaLoop-${snapshot!!.name}.zip"),102)}}
@@ -179,7 +180,7 @@ class MainActivity:Activity(){
         val session=connected.currentSession()
         val haptics=connected.currentHaptics()
         if(!capabilityState.applyRuntime(request,session?.requested==true,session?.cleanupPending==true,haptics?.pendingStop==true))return
-        stats.text=session?.let{s->"${s.mode} · ${s.status}\nPPG 包 ${s.stats.ppgPackets} / 样本 ${s.stats.ppgSamples}\n联合帧 ${s.stats.pairedFrames} / PPG ${s.stats.pairedPPG} / MEMS ${s.stats.memsTriples}\n停止确认 ${s.stopConfirmed}"}?:"尚未开始采集"
+        stats.text=session?.let{s->"${s.mode} · ${s.status}\nACC 包 ${s.stats.accPackets ?: 0} / 样本 ${s.stats.accSamples ?: 0}\nPPG 包 ${s.stats.ppgPackets} / 样本 ${s.stats.ppgSamples}\n联合帧 ${s.stats.pairedFrames} / PPG ${s.stats.pairedPPG} / MEMS ${s.stats.memsTriples}\n停止确认 ${s.stopConfirmed}"}?:"尚未开始采集"
         renderAvailability()
     }
     private suspend fun observeSafely(binding:Long,block:suspend()->Unit){try{block()}catch(e:CancellationException){throw e}catch(e:Exception){if(capabilityState.isCurrent(binding))showFailure(e)}}
