@@ -42,7 +42,7 @@ Swift 使用 actor 和 `async/await`；Kotlin 主要使用 `suspend` 与 `Flow`�
 
 历史类型为 `activity`、`steps`、`sleep`、`heartRate`、`singleHeartRate`、`hrv`、`alarms`、`sport`、`temperature`、`ppi`、`spo2`、`sleepActivity`、`sleepDebug`、`systemEvents`、`powerDebug`。这 15 类和闹钟设置读取均为 C，默认无需读取开关。`historyByKind` 以这些名称为键；原 `history` 表保留。Java 使用 `ApiViews.historyByKind(snapshot)`。
 
-raw ECG 和马达默认可调用。联合采集、校时及历史时间规则仅使用 **0.0.8.8／固件日期 260604** 配置；raw ACC 为 E，通过研究入口显式选择，实时诊断为 U。
+raw ECG 和马达默认可调用。联合采集、校时及历史时间规则仅使用 **0.0.8.8／固件日期 260604** 配置；raw ACC 在同一固件日期为 C，可通过 `startCapture(accOnly)` 持久采集；其他准入固件保持 E，使用研究入口，实时诊断为 U。
 
 `allowExperimental`／`allowUntested` 读取重载保留兼容，仅控制历史和设置读取；它们不绕过最低固件、`unsupported` 或严格解码，也不启用校时、清除或研究流。
 
@@ -81,3 +81,11 @@ raw ECG 和马达默认可调用。联合采集、校时及历史时间规则仅
 | `stopUnconfirmed` | 处理持久待关闭项和用户停止确认 |
 
 Swift 使用 `SDKError`；Kotlin 使用 `SDKException.code`，Java 回调使用 `ErrorCode`。按错误码处理，不解析自由文本。部分结果对象可同时含 `interruption`，应与方法返回值一并保存。
+
+## 0.1.9 接口补充
+
+`startCapture(accOnly)` 使用持久会话，只开启 ACC；默认一天、最多七天，支持同身份恢复及导出。`ACCFrame` 含六组有符号 XYZ 原始计数，不提供已校准单位或样本时间。
+
+`readBattery` 是空闲时的单条读取；`chargingStateRaw` 和 `voltage.rawValue` 分别保留 SDK 解码的原始充电码和无符号电压值。充电状态、缩放及单位未经确认，枚举为unknown，物理值和单位为null。采集中仍busy，只有收到实际电量通知时才发电量事件，不保证固件主动推送。
+
+`readWearState` 在00000808-260604上短暂打开PPG/调试，默认观察5秒（另计写入和关闭超时），返回固件接触状态，不留采集目录；忙时busy、无信号unknown、关闭失败stopUnconfirmed并断连。采集中的skinContact事件独立解析完整TOUCH/touch_flag行；未确认语义的设备佩戴事件保留unknown，touch_value阈值未知。未接触时宿主应提示调整佩戴或停止PPG，避免无数据重启循环。旧二进制尚无这些新增接口，升级需重编译并补齐新枚举分支。

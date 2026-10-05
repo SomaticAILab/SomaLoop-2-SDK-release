@@ -3,8 +3,23 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import com.somaticai.somaloop.*;
 import java.util.Collections;
+import kotlinx.serialization.json.JsonObject;
+import kotlinx.serialization.json.JsonPrimitive;
 
 public final class BinaryIntegrationTest {
+    @Test public void binaryACCAndBatteryContactAPIs() throws Exception {
+        assertEquals("accOnly", ApiViews.serverMode(CaptureMode.accOnly));
+        byte[] bytes = new byte[44]; bytes[0] = 0x33; bytes[1] = (byte) 0xff; bytes[2] = (byte) 0xff; bytes[43] = (byte) 0xff;
+        ACCFrame frame = ACCFrame.parse(bytes);
+        assertNotNull(frame); assertEquals(6, frame.getSamples().size());
+        assertEquals(-1, frame.getSamples().get(0).getX()); assertEquals(255, frame.getSequence());
+        BatteryReading battery = new BatteryReading(new ReportedValue(75, 75.0, "percent", "raw"), "134b02341200000000000000000000a6");
+        assertEquals(Integer.valueOf(2), battery.getChargingStateRaw()); assertEquals(ChargingState.unknown, battery.getChargingState());
+        assertEquals(4660, battery.getVoltage().getRawValue()); assertNull(battery.getVoltage().getUnit());
+        assertNotNull(WearStatus.unknown);
+        assertNotNull(SomaLoopJava.class.getMethod("readWearState", double.class, SomaLoopJava.Callback.class));
+        assertNotNull(SomaLoopJava.class.getMethod("readBattery", SomaLoopJava.Callback.class));
+    }
     @Test public void firmware0088Capabilities() {
         DeviceProfile p = DeviceProfile.Companion.identify("test", "66778899aabb", "00000808", "260604", "New device");
         assertEquals(CapabilityState.compatibleCandidate, p.getState());
@@ -147,6 +162,7 @@ public final class BinaryIntegrationTest {
         assertEquals(CapabilityState.compatibleCandidate, p.getState());
     }
     @Test public void binaryPublicContractLoads() throws Exception {
+        assertEquals("SomaLoop 2 SDK", SomaLoop.product);
         assertTrue(SomaLoop.version.startsWith("0.1."));
         assertEquals(64, SomaLoop.buildRevision.length());
         String expectedRevision = System.getenv("SOMALOOP_EXPECTED_REVISION");
@@ -156,6 +172,85 @@ public final class BinaryIntegrationTest {
         assertNull(ECGFrame.parse(new byte[180]));
         assertNotNull(SomaLoopJava.class.getMethod("recordECG", int.class, SomaLoopJava.Callback.class));
         assertNotNull(SomaLoopJava.class.getMethod("stopResearch", SomaLoopJava.Callback.class));
+    }
+    @Test public void explicitPowerDebugContractRetainsOriginalPartialCalendar() {
+        byte[] bytes = new byte[HistoryKind.powerDebug.getRecordLength()];
+        bytes[0] = 0x67; bytes[1] = 1;
+        bytes[3] = 0x10; bytes[4] = 0x01; bytes[5] = 0x14; bytes[6] = 0x59; bytes[7] = 7;
+        HistoryRecord record = HistoryDecoder.replay(HistoryKind.powerDebug, Collections.singletonList(bytes)).get(0);
+        String deviceID = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
+        SomaAdaptationResult result = SomaContractAdapter.historyForContract(record, deviceID, SomaContractRevision.partialCalendarHistoryV1);
+        assertTrue(result.getRejections().isEmpty());
+        assertEquals(1, result.getObjects().size());
+        JsonObject object = result.getObjects().get(0);
+        assertEquals(6, object.size());
+        assertEquals("soma.history-record/v1", ((JsonPrimitive)object.get("schema")).getContent());
+        assertEquals("powerDebug", ((JsonPrimitive)object.get("kind")).getContent());
+        assertEquals("10011459", ((JsonPrimitive)object.get("device_date")).getContent());
+        assertEquals("minute_no_year", ((JsonPrimitive)object.get("precision")).getContent());
+        assertEquals(record.getRawHex(), ((JsonPrimitive)object.get("raw_hex")).getContent());
+        assertEquals(deviceID, ((JsonPrimitive)object.get("device_id")).getContent());
+        assertEquals(Collections.singletonList(record), result.getRetainedRawRecords());
+        assertNull(record.getDeviceCalendar());
+        assertEquals("null", result.getProvenance().get(0).get("record_id").toString());
+        assertEquals(SomaContractRevision.partialCalendarHistoryV1.getRevision(), ((JsonPrimitive)result.getProvenance().get(0).get("server_contract_revision")).getContent());
+        assertEquals(SomaContractRevision.legacyV1, SomaContractAdapter.defaultContractRevision);
+        assertTrue(SomaContractAdapter.history(record, deviceID).getObjects().isEmpty());
+        SomaAdaptationResult previous = SomaContractAdapter.historyForContract(record, deviceID, SomaContractRevision.diagnosticHistoryV1);
+        assertTrue(previous.getObjects().isEmpty());
+        assertEquals("calendarPrecisionInsufficient", previous.getRejections().get(0).getReason());
+    }
+    @Test public void ecgReceiptTimingAndLegacyJavaEntriesRemainAccessible() throws Exception {
+        ECGReceptionTiming timing = new ECGReceptionTiming(10.0, 2, 1.0, 9.0, 8.0, 1.0, 1.0);
+        java.util.List<ECGFrame> frames = java.util.Arrays.asList(
+                new ECGFrame(42, java.util.Arrays.asList(7L, 8L), "", "synthetic-first"),
+                new ECGFrame(43, Collections.singletonList(9L), "", "synthetic-second"));
+        String meaning = "Host operation boundaries only; no per-sample timestamps";
+        ECGRecording recording = new ECGRecording(60, 100.0, 110.0, frames, true, null, "unsigned24Raw", null, meaning, timing);
+        assertEquals(10.0, recording.getReceptionTiming().getObservationDurationSeconds(), 0.0);
+        assertEquals(2, timing.getReceivedFrameCount());
+        assertEquals(Double.valueOf(1.0), timing.getFirstFrameOffsetSeconds());
+        assertEquals(Double.valueOf(9.0), timing.getLastFrameOffsetSeconds());
+        assertEquals(Double.valueOf(8.0), timing.getMaximumInterFrameGapSeconds());
+        assertEquals(1.0, timing.getLeadingSilenceSeconds(), 0.0);
+        assertEquals(1.0, timing.getTrailingSilenceSeconds(), 0.0);
+        ECGReceptionSummary summary = ApiViews.ecgReceptionSummary(recording);
+        assertSame(timing, summary.getReceptionTiming());
+        assertEquals(2, summary.getFrameCount());
+        assertEquals(3, summary.getSampleCount());
+        assertEquals("unknown", summary.getCompleteness());
+        assertNull(summary.getSampleRateHz());
+        assertNull(summary.getExpectedSampleCount());
+        assertNotNull(ECGReceptionSummary.class.getConstructor(int.class, int.class, int.class));
+        assertNotNull(ECGReceptionSummary.class.getMethod("copy", int.class, int.class, int.class));
+        ECGReceptionSummary legacySummary = new ECGReceptionSummary(2, 3, 0);
+        assertEquals("unknown", legacySummary.getCompleteness());
+        assertNull(legacySummary.getReceptionTiming());
+        ECGReceptionSummary summaryCopy = summary.copy(4, 8, 1);
+        assertEquals(4, summaryCopy.getFrameCount());
+        assertEquals(8, summaryCopy.getSampleCount());
+        assertEquals(1, summaryCopy.getSequenceDiscontinuityCount());
+        assertEquals("unknown", summaryCopy.getCompleteness());
+        assertSame(timing, summaryCopy.getReceptionTiming());
+        assertNull(legacySummary.copy(4, 8, 1).getReceptionTiming());
+        ECGReceptionSummary oldSummaryJSON = ModelsKt.getSdkJson().decodeFromString(ECGReceptionSummary.Companion.serializer(), "{\"frameCount\":2,\"sampleCount\":3,\"sequenceDiscontinuityCount\":0}");
+        assertEquals(legacySummary, oldSummaryJSON);
+        String encoded = ModelsKt.getSdkJson().encodeToString(ECGRecording.Companion.serializer(), recording);
+        assertEquals(recording, ModelsKt.getSdkJson().decodeFromString(ECGRecording.Companion.serializer(), encoded));
+        String legacyJSON = "{\"requestedSeconds\":60,\"startedAt\":100.0,\"endedAt\":110.0,\"frames\":[],\"stopConfirmed\":true,\"interruption\":null}";
+        ECGRecording decoded = ModelsKt.getSdkJson().decodeFromString(ECGRecording.Companion.serializer(), legacyJSON);
+        assertNull(decoded.getReceptionTiming());
+        assertNull(ApiViews.ecgReceptionSummary(decoded).getReceptionTiming());
+        Class<?>[] legacyTypes = {int.class, double.class, double.class, java.util.List.class, boolean.class, ErrorCode.class, String.class, Double.class, String.class};
+        assertNotNull(ECGRecording.class.getConstructor(legacyTypes));
+        assertNotNull(ECGRecording.class.getMethod("copy", legacyTypes));
+        ECGRecording legacy = new ECGRecording(60, 100.0, 110.0, frames, true, null, "unsigned24Raw", null, meaning);
+        assertNull(legacy.getReceptionTiming());
+        ECGRecording copied = recording.copy(61, 100.0, 110.0, frames, true, null, "unsigned24Raw", null, meaning);
+        assertEquals(61, copied.getRequestedSeconds());
+        assertSame(timing, copied.getReceptionTiming());
+        assertEquals(frames, copied.getFrames());
+        assertNull(legacy.copy(61, 100.0, 110.0, frames, true, null, "unsigned24Raw", null, meaning).getReceptionTiming());
     }
     @Test public void pairedParserJavaConstructorsAndManifestMetadata() {
         PairedDebugParser legacy = new PairedDebugParser();

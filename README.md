@@ -1,8 +1,10 @@
-# Somatic AI SDK
+# SomaLoop 2 SDK
 
-Somatic AI 可穿戴设备的 iOS / Android SDK，提供二进制库、Swift / Kotlin / Java 示例及接入文档。
+本版本包含独立 ACC 持久采集、电量原始字段和皮肤接触状态接口。升级请替换完整 SDK 包并重新编译消费者；充电状态码、电压单位及部分固件事件语义仍为 unknown。
 
-版本：**0.1.7 / build 21**。支持有效四字节 BCD 固件 **≥0.0.8.8（含）**，不设上限。公开模块为 `SomaLoopSDK`、`SomaLoopExperimental`，Android 包名为 `com.somaticai.somaloop`。
+SomaLoop 2 SDK 提供可穿戴设备的 iOS / Android 原生接入，提供二进制库、Swift / Kotlin / Java 示例及接入文档。
+
+版本：**0.1.9 / build 24**。支持有效四字节 BCD 固件 **≥0.0.8.8（含）**，不设上限。公开模块为 `SomaLoopSDK`、`SomaLoopExperimental`，Android 包名为 `com.somaticai.somaloop`。
 
 ## 接入
 
@@ -20,12 +22,12 @@ Somatic AI 可穿戴设备的 iOS / Android SDK，提供二进制库、Swift / K
 | 设备发现与连接 | 扫描、选择设备、连接后查询分项能力 |
 | 设备信息与设置 | 读取信息、时钟和设置快照；闹钟返回完整列表 |
 | 历史读取 | 15 类历史及闹钟读取默认可调用，保存记录并检查完成／中断状态 |
-| 采集与测量 | PPG、联合 PPG + ACC、限时原始 ECG、心率／血氧／HRV 主动测量 |
+| 采集与测量 | PPG、联合 PPG + ACC、独立 ACC、限时原始 ECG、心率／血氧／HRV 主动测量 |
 | 马达节拍 | 播放、停止、取消、待停止恢复和会话导出 |
 | 本地数据 | 会话持久化、恢复、导出和诊断摘要 |
 | 实验性历史清除 | 准备和执行各显式启用实验功能，执行另需确认 |
 
-15 类历史及闹钟读取为 C（`compatibleCandidate`）。联合采集、校时和历史时间规则仅使用 0.0.8.8／固件日期 260604 配置；raw ACC 为 E（`experimental`），实时诊断为 U（`untested`）。具体准入通过能力快照查询。每日步数目标由 App／服务端维护。
+15 类历史及闹钟读取为 C（`compatibleCandidate`）。联合采集、校时和历史时间规则仅使用 0.0.8.8／固件日期 260604 配置；raw ACC 在 00000808-260604 为 C，其他准入固件为 E（`experimental`），实时诊断为 U（`untested`）。具体准入通过能力快照查询。每日步数目标由 App／服务端维护。
 
 ## 使用流程
 

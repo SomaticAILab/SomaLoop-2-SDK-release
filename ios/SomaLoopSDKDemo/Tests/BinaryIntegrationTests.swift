@@ -1,6 +1,18 @@
 import XCTest
 import SomaLoopSDK
 final class BinaryIntegrationTests:XCTestCase {
+    func testBinaryACCAndBatteryContactAPIs()throws {
+        XCTAssertEqual(CaptureMode.accOnly.rawValue,"acc_only")
+        XCTAssertEqual(CaptureMode.accOnly.serverMode,"accOnly")
+        var bytes=[UInt8](repeating:0,count:44);bytes[0]=0x33;bytes[1]=0xff;bytes[2]=0xff;bytes[43]=255
+        let frame=try XCTUnwrap(ACCFrame(Data(bytes)))
+        XCTAssertEqual(frame.samples.count,6);XCTAssertEqual(frame.samples[0].x,-1);XCTAssertEqual(frame.sequence,255)
+        let battery=try JSONDecoder().decode(BatteryReading.self,from:Data(#"{"percentage":{"rawValue":75,"value":75,"unit":"percent","quality":"raw"},"rawHex":"134b02341200000000000000000000a6"}"#.utf8))
+        XCTAssertEqual(battery.chargingStateRaw,2);XCTAssertEqual(battery.chargingState,.unknown)
+        XCTAssertEqual(battery.voltage?.rawValue,4660);XCTAssertNil(battery.voltage?.unit)
+        let wear=try JSONDecoder().decode(WearState.self,from:Data(#"{"state":"unknown","source":"0x86","rawValue":"1","observedAt":1}"#.utf8))
+        XCTAssertEqual(wear.state,.unknown);XCTAssertEqual(wear.rawValue,"1")
+    }
     func testBinaryCompatibleHistoryAndCompleteAlarmSettings()async throws {
         let device=DiscoveredDevice(id:"synthetic-read-permissions",name:nil,rssi:-45)
         var sport=[UInt8](repeating:0,count:26);sport[0]=0x5c;sport[1]=1
@@ -125,6 +137,7 @@ final class BinaryIntegrationTests:XCTestCase {
         XCTAssertThrowsError(try HapticPattern(name:"too fast",bpm:121).compile())
     }
     func testBinaryProfileIdentity() {
+        XCTAssertEqual(SomaLoop.product,"SomaLoop 2 SDK")
         let p = DeviceProfile(deviceID:"test",mac:"001122334455",firmwareHex:"00000808",dateHex:"260604",advertisedName:"Original BLE name")
         XCTAssertEqual(p.id,"somaloop-fw-00000808-260604")
         XCTAssertEqual(p.advertisedName,"Original BLE name")
@@ -217,6 +230,51 @@ final class BinaryIntegrationTests:XCTestCase {
         XCTAssertEqual(rule["ruleID"],.text("heart-rate-start-5s-00000808-260604-v1"))
         XCTAssertEqual(rule["evidenceSource"],.text("protocolReferenceAndUserConfirmation"))
         XCTAssertEqual(rule["independentlyValidated"],.boolean(false))
+    }
+    func testBinaryPartialCalendarRevisionPreservesPowerDebugWithoutInventedTime()throws {
+        var bytes=[UInt8](repeating:0,count:HistoryKind.powerDebug.recordLength)
+        bytes.replaceSubrange(0...7,with:[0x67,1,0,0x10,1,0x14,0x59,7])
+        let original=try HistoryRecord(packet:SomaLoopPacketDecoder.decode(Data(bytes)))
+        let restored=try JSONCoding.decoder().decode(HistoryRecord.self,from:JSONCoding.encoder().encode(original))
+        let result=try SomaContractAdapter.historyForContract(restored,deviceID:"01ARZ3NDEKTSV4RRFFQ69G5FAV",contractRevision:.partialCalendarHistoryV1)
+        let object=try XCTUnwrap(result.objects.first)
+        XCTAssertEqual(result.objects.count,1);XCTAssertTrue(result.rejections.isEmpty)
+        XCTAssertEqual(Set(object.keys),Set(["schema","kind","device_date","precision","raw_hex","device_id"]))
+        XCTAssertEqual(object["schema"],.text("soma.history-record/v1"));XCTAssertEqual(object["kind"],.text("powerDebug"))
+        XCTAssertEqual(object["device_date"],.text("10011459"));XCTAssertEqual(object["precision"],.text("minute_no_year"))
+        XCTAssertEqual(object["raw_hex"],.text(Data(bytes).hex));XCTAssertEqual(result.retainedRawRecords,[restored])
+        XCTAssertNil(restored.deviceCalendar);XCTAssertTrue(restored.series.isEmpty)
+        guard case .object(let parts)=restored.fields["deviceDateParts"] else{return XCTFail("Missing raw partial calendar")}
+        XCTAssertEqual(Set(parts.keys),Set(["month","day","hour","minute"]))
+        XCTAssertEqual(result.provenance[0]["record_id"],.null)
+        XCTAssertEqual(result.provenance[0]["server_contract_revision"],.text(SomaContractRevision.partialCalendarHistoryV1.rawValue))
+        XCTAssertNil(result.provenance[0]["time_evidence"])
+        let previous=try SomaContractAdapter.historyForContract(restored,deviceID:"01ARZ3NDEKTSV4RRFFQ69G5FAV",contractRevision:.diagnosticHistoryV1)
+        XCTAssertTrue(previous.objects.isEmpty);XCTAssertEqual(previous.rejections.map(\.reason),["calendarPrecisionInsufficient"])
+    }
+    func testBinaryECGDecodesOldRecordingAndExposesReceiptTimingWithoutCoverageClaim()throws {
+        var bytes=[UInt8](repeating:0,count:181);bytes[0]=7;bytes[1]=0
+        bytes.replaceSubrange(2...4,with:[0xff,0xff,0xff]);bytes.replaceSubrange(179...180,with:[0xab,0xcd])
+        let packet=try SomaLoopPacketDecoder.decode(Data(bytes))
+        let original=ECGRecording(startedAt:1,endedAt:61,requestedSeconds:60,packets:[packet],stopConfirmed:true,interruption:nil)
+        var json=try XCTUnwrap(JSONSerialization.jsonObject(with:JSONEncoder().encode(original)) as? [String:Any])
+        json.removeValue(forKey:"receptionTiming")
+        let old=try JSONDecoder().decode(ECGRecording.self,from:JSONSerialization.data(withJSONObject:json))
+        XCTAssertNil(old.receptionTiming);XCTAssertNil(old.receptionSummary.receptionTiming)
+        XCTAssertEqual(old.frames.count,1);XCTAssertEqual(old.frames[0].values.count,59)
+        XCTAssertEqual(old.frames[0].values.first,0xffffff);XCTAssertEqual(old.frames[0].unknownTail,"abcd")
+        XCTAssertEqual(old.packets.map(\.rawHex),[Data(bytes).hex]);XCTAssertEqual(old.receptionSummary.completeness,"unknown")
+        json["receptionTiming"]=["observationDurationSeconds":60,"receivedFrameCount":1,"firstFrameOffsetSeconds":30,
+                                 "lastFrameOffsetSeconds":30,"leadingSilenceSeconds":30,"trailingSilenceSeconds":30]
+        let current=try JSONDecoder().decode(ECGRecording.self,from:JSONSerialization.data(withJSONObject:json))
+        let timing=try XCTUnwrap(current.receptionTiming)
+        XCTAssertEqual(timing.observationDurationSeconds,60);XCTAssertEqual(timing.receivedFrameCount,1)
+        XCTAssertEqual(timing.firstFrameOffsetSeconds,30);XCTAssertEqual(timing.lastFrameOffsetSeconds,30)
+        XCTAssertNil(timing.maximumInterFrameGapSeconds);XCTAssertEqual(timing.leadingSilenceSeconds,30);XCTAssertEqual(timing.trailingSilenceSeconds,30)
+        XCTAssertEqual(current.receptionSummary.receptionTiming,timing);XCTAssertEqual(current.sampleCount,59)
+        XCTAssertEqual(current.receptionSummary.completeness,"unknown")
+        XCTAssertNil(current.receptionSummary.sampleRateHz);XCTAssertNil(current.receptionSummary.expectedSampleCount)
+        XCTAssertEqual(try JSONDecoder().decode(ECGRecording.self,from:JSONEncoder().encode(current)).receptionTiming,timing)
     }
     private func sleepRecord()throws->HistoryRecord {
         var bytes=[UInt8]([0x53,1,0,0x26,9,0x28,0,1,0,3,1,0,9]);bytes += [UInt8](repeating:0,count:130-bytes.count)
