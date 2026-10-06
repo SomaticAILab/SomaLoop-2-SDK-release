@@ -1,6 +1,6 @@
 # Android / Java 接入
 
-SomaLoop 2 SDK 0.1.9 / build 24 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
+SomaLoop 2 SDK 0.1.11 / build 27 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
 
 ## 安装与构建
 
@@ -18,8 +18,8 @@ dependencyResolutionManagement {
 
 // app/build.gradle.kts
 dependencies {
-    implementation("com.somaticai.somaloop:sdk:0.1.9")
-    implementation("com.somaticai.somaloop:experimental:0.1.9") // 研究入口，可选
+    implementation("com.somaticai.somaloop:sdk:0.1.11")
+    implementation("com.somaticai.somaloop:experimental:0.1.11") // 研究入口，可选
 }
 ```
 
@@ -154,3 +154,7 @@ client.stopCapture()
 ```
 
 Java 对应入口为 `SomaLoopJava.readBattery(callback)`、`readWearState(5.0, callback)`，回调类型分别为 `BatteryReading` 和 `WearState`。独立 ACC 支持持久会话、导出及同身份恢复，Demo 提供相应启动按钮和计数。主动接触检查会短暂启动 PPG；观察时长不含写入与关闭确认时间。采集中上述两个读取入口仍返回 `busy`，未知充电码、电压单位及佩戴事件不会猜测。升级须重新编译消费者并补齐新增枚举分支。
+
+## PPI RMSSD（0.1.11 正式算法）
+
+Kotlin / Java 使用 `PPIHRV.fromBatch(ppiBatch)` 从一次完整的 PPI 历史读取返回数值或 null／原因。有效 `rmssdMilliseconds` 可映射到 `hrv_rmssd`；缺失时跳过评分和提醒更新。默认策略、分组边界与质量存储见[数据与时间语义](数据与时间语义.md)。使用本版本完整二进制包，并重新编译消费者。

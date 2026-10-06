@@ -1,17 +1,17 @@
 {
-  "version": "0.1.9",
-  "buildNumber": 24,
-  "buildRevision": "12c86d42d5a439df2d79449447547816ade95f1baeed0cddf09147d11ddeb6f1",
-  "tag": "v0.1.9-build24",
+  "version": "0.1.11",
+  "buildNumber": 27,
+  "buildRevision": "7b86672f5bde350b3dc21a034a25954e31a13f1b3fbc4782cf5c1a466027fba9",
+  "tag": "v0.1.11-build27",
   "currentChecks": [
     {
       "platform": "android",
       "caseID": "android-host",
       "kind": "host-tests",
       "exitCode": 0,
-      "caseCount": 264,
-      "evidenceSHA256": "4653f2bb85533eedc8791c0959c7ad62732209044d97781a2dcc68fcc7b5fd74",
-      "passed": 263,
+      "caseCount": 273,
+      "evidenceSHA256": "00f018f52bfa44d812809935f274302b9b22f5f87d6aca11633f5d958253187d",
+      "passed": 272,
       "skipped": 1,
       "failed": 0
     },
@@ -21,7 +21,7 @@
       "kind": "source-build",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "f42f2f4c7393a2186c1fbc867b8eeed6f0ece18cad2a0da7cee52d3e8139c488",
+      "evidenceSHA256": "ebdb1e4725167244b5f568bc00a1723acc4300609be7c139eedd2fde29971f8d",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -32,7 +32,7 @@
       "kind": "surface-audit",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "48d03050851bdee93997ce87d5e62aca5e7d897db415df26fd339f4e5d4eaba7",
+      "evidenceSHA256": "a69ceddd4bf7284d48ca3a24a0ff8a9073a72957e77de40df00d4214abab5623",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -42,9 +42,9 @@
       "caseID": "android-java-surface",
       "kind": "surface-tests",
       "exitCode": 0,
-      "caseCount": 6,
-      "evidenceSHA256": "4e0cd33063d94f94bc08103d22fc63f18898852965ffb97e94e2c0c2c25315d0",
-      "passed": 6,
+      "caseCount": 7,
+      "evidenceSHA256": "aa7aa68890d3ac025fc703dd836e0b9018a43b55da12ba1325fa10f071cbd9f5",
+      "passed": 7,
       "skipped": 0,
       "failed": 0
     },
@@ -53,9 +53,9 @@
       "caseID": "android-binary-consumer",
       "kind": "binary-consumer",
       "exitCode": 0,
-      "caseCount": 26,
-      "evidenceSHA256": "f36603db75867daeb711ec115f25cac1ecbd19ff063f4b7cca973f263213515d",
-      "passed": 26,
+      "caseCount": 27,
+      "evidenceSHA256": "ce555802422b8676b4362f1ec74bdff3e25768c58aba8042a8b5a819a65e088d",
+      "passed": 27,
       "skipped": 0,
       "failed": 0
     },
@@ -64,9 +64,9 @@
       "caseID": "swift-host",
       "kind": "host-tests",
       "exitCode": 0,
-      "caseCount": 283,
-      "evidenceSHA256": "a92dad333cae7eb2d910a63faa0fa1d010a16c4a99f771fee5a3dc3a865632ad",
-      "passed": 283,
+      "caseCount": 291,
+      "evidenceSHA256": "08723d13228afb983064e7ac34c07ab1fee45777021ee788287b99d75d598471",
+      "passed": 291,
       "skipped": 0,
       "failed": 0
     },
@@ -76,7 +76,7 @@
       "kind": "source-build",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "d17e95323b15d72e57957e6127c8d5af7769c42f5964b31ff8cc6761bb495013",
+      "evidenceSHA256": "793e11165cefcec43e6e7c2817e86c7948b18521f48636e812ccf305d9054798",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -87,7 +87,7 @@
       "kind": "consumer-setup",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "aca7193193f75d58dadd1bc8ee0aae388f0129b7463df80753f7defd0362862e",
+      "evidenceSHA256": "852ba9793ec5f03171c1596dda6548a45ce2595aa1d51db6a9fdc11e02936f09",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -97,9 +97,9 @@
       "caseID": "ios-binary-consumer-tests",
       "kind": "binary-consumer",
       "exitCode": 0,
-      "caseCount": 20,
-      "evidenceSHA256": "347cf7cc0e8d45d2933ec88c8a305429e68ab605dbc1a57437926bc47a3de3a0",
-      "passed": 20,
+      "caseCount": 21,
+      "evidenceSHA256": "c0dce8596c41c1fca270ff1f9c475d22cb30c312af8f09d2ef2e577e28a3eb83",
+      "passed": 21,
       "skipped": 0,
       "failed": 0
     },
@@ -109,7 +109,7 @@
       "kind": "consumer-device-build",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "b5d1d2829367ff50b9f5f334ee8bc92c79df83bbbd75f83fae219a13daabccd9",
+      "evidenceSHA256": "36bda4f87fd2d78f4a9021fab829c7d39ebc229edcd654a1252a45773288d7ff",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -121,7 +121,7 @@
   "rawDataIncluded": false,
   "currentEvidenceIndexSHA256": null,
   "ciEvidenceSHA256": [
-    "3c7d5b608e4c7be45d1b775546bf40655e09f95a2b6398de6e0ffdfec2c3b80b"
+    "858517d8fed5dfac0ad2fc7db062ca9690df2cbe241303ea5a1652f7384fe3db"
   ],
   "publicDocuments": [
     "README.md",

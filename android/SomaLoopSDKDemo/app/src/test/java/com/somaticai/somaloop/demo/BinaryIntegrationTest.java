@@ -7,6 +7,29 @@ import kotlinx.serialization.json.JsonObject;
 import kotlinx.serialization.json.JsonPrimitive;
 
 public final class BinaryIntegrationTest {
+    @Test public void binaryPPIRMSSDAndUnavailableJSON() {
+        java.util.List<Double> intervals = new java.util.ArrayList<>();
+        for (int i = 0; i < 50; i++) intervals.add(i % 2 == 0 ? 800.0 : 840.0);
+        PPIHRVResult result = PPIHRV.calculate(intervals);
+        assertEquals(40.0, result.getRmssdMilliseconds(), 1e-10);
+        assertEquals("screenedPPI", result.getQuality());
+        assertEquals("ms", result.getUnit());
+        assertEquals("ppi-rmssd", result.getAlgorithm());
+        java.util.List<Double> interrupted = new java.util.ArrayList<>(Collections.nCopies(18, 800.0));
+        interrupted.add(1400.0); interrupted.addAll(Collections.nCopies(18, 840.0));
+        PPIHRVResult filtered = PPIHRV.calculate(interrupted);
+        assertEquals(0.0, filtered.getRmssdMilliseconds(), 0.0);
+        assertEquals(Integer.valueOf(36), filtered.getRetainedIntervalCount());
+        assertEquals(Integer.valueOf(1), filtered.getRejectedIntervalCount());
+        assertEquals(34, filtered.getSuccessiveDifferenceCount());
+        assertEquals(0.0, PPIHRV.calculate(Collections.nCopies(35, 800.0)).getRmssdMilliseconds(), 0.0);
+        assertEquals(PPIHRVUnavailableReason.insufficientRetainedIntervals,
+            PPIHRV.calculate(Collections.nCopies(34, 800.0)).getUnavailableReason());
+        PPIHRVResult missing = PPIHRV.calculate(java.util.Arrays.asList(800.0, null));
+        assertNull(missing.getRmssdMilliseconds());
+        assertEquals(PPIHRVUnavailableReason.invalidInterval, missing.getUnavailableReason());
+        assertEquals(kotlinx.serialization.json.JsonNull.INSTANCE, missing.toJson().get("rmssdMilliseconds"));
+    }
     @Test public void binaryACCAndBatteryContactAPIs() throws Exception {
         assertEquals("accOnly", ApiViews.serverMode(CaptureMode.accOnly));
         byte[] bytes = new byte[44]; bytes[0] = 0x33; bytes[1] = (byte) 0xff; bytes[2] = (byte) 0xff; bytes[43] = (byte) 0xff;

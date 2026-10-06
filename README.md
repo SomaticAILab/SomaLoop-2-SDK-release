@@ -1,10 +1,10 @@
 # SomaLoop 2 SDK
 
-本版本包含独立 ACC 持久采集、电量原始字段和皮肤接触状态接口。升级请替换完整 SDK 包并重新编译消费者；充电状态码、电压单位及部分固件事件语义仍为 unknown。
+0.1.11 使用 SDK 正式 HRV 算法 `ppi-rmssd`：以原始 PPI 均值的 70%–105% 筛选，至少保留 35 个间期，用保留的原始相邻差分计算 RMSSD；无法计算时返回 null 和原因。下游可用于 `hrv_rmssd` 及同来源个人基线、恢复分和提醒；用法见[数据与时间语义](docs/数据与时间语义.md)。升级请替换完整 SDK 包并重新编译消费者。
 
 SomaLoop 2 SDK 提供可穿戴设备的 iOS / Android 原生接入，提供二进制库、Swift / Kotlin / Java 示例及接入文档。
 
-版本：**0.1.9 / build 24**。支持有效四字节 BCD 固件 **≥0.0.8.8（含）**，不设上限。公开模块为 `SomaLoopSDK`、`SomaLoopExperimental`，Android 包名为 `com.somaticai.somaloop`。
+版本：**0.1.11 / build 27**。支持有效四字节 BCD 固件 **≥0.0.8.8（含）**，不设上限。公开模块为 `SomaLoopSDK`、`SomaLoopExperimental`，Android 包名为 `com.somaticai.somaloop`。
 
 ## 接入
 

@@ -628,6 +628,69 @@ extension Foundation.Data {
   }
   public init?(hex: Swift.String)
 }
+public struct PPIHRVPolicy : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let minimumIntervalCount: Swift.Int
+  public let minimumIntervalMilliseconds: Swift.Double
+  public let maximumIntervalMilliseconds: Swift.Double
+  public let minimumMeanRatio: Swift.Double
+  public let maximumMeanRatio: Swift.Double
+  public init(minimumIntervalCount: Swift.Int = 35, minimumIntervalMilliseconds: Swift.Double = 300, maximumIntervalMilliseconds: Swift.Double = 2000, minimumMeanRatio: Swift.Double = 0.70, maximumMeanRatio: Swift.Double = 1.05) throws
+  public static let standard: SomaLoopSDK.PPIHRVPolicy
+  public static func == (a: SomaLoopSDK.PPIHRVPolicy, b: SomaLoopSDK.PPIHRVPolicy) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public enum PPIHRVUnavailableReason : Swift.String, Swift.Codable, Swift.Sendable {
+  case missingIntervals, invalidInterval
+  case insufficientRetainedIntervals, noOriginalAdjacentPairs
+  case incompleteRead, missingRecords, invalidRecord, wrongRecordKind, calendarUnavailable, mixedSaveTimes
+  case invalidGroupMetadata, incompleteGroups, duplicateGroup, invalidTerminator
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public struct PPIHRVResult : Swift.Encodable, Swift.Equatable, Swift.Sendable {
+  public let rmssdMilliseconds: Swift.Double?
+  public let unavailableReason: SomaLoopSDK.PPIHRVUnavailableReason?
+  public let intervalCount: Swift.Int
+  public let successiveDifferenceCount: Swift.Int
+  public let retainedIntervalCount: Swift.Int?
+  public let referenceMeanMilliseconds: Swift.Double?
+  public var rejectedIntervalCount: Swift.Int? {
+    get
+  }
+  public var lowerBoundMilliseconds: Swift.Double? {
+    get
+  }
+  public var upperBoundMilliseconds: Swift.Double? {
+    get
+  }
+  public let observedDurationSeconds: Swift.Double?
+  public let deviceSaveTime: SomaLoopSDK.DeviceCalendar?
+  public let sourceFingerprints: [Swift.String]
+  public let policy: SomaLoopSDK.PPIHRVPolicy
+  public var quality: Swift.String {
+    get
+  }
+  public var algorithm: Swift.String {
+    get
+  }
+  public var unit: Swift.String {
+    get
+  }
+  public var source: Swift.String {
+    get
+  }
+  public func encode(to encoder: any Swift.Encoder) throws
+  public static func == (a: SomaLoopSDK.PPIHRVResult, b: SomaLoopSDK.PPIHRVResult) -> Swift.Bool
+}
+public enum PPIHRV {
+  public static func calculate(intervalsMilliseconds: [Swift.Double?], policy: SomaLoopSDK.PPIHRVPolicy = .standard) throws -> SomaLoopSDK.PPIHRVResult
+  public static func fromHistory(_ records: [SomaLoopSDK.HistoryRecord], groupIndexBase: Swift.Int? = nil, policy: SomaLoopSDK.PPIHRVPolicy = .standard) throws -> SomaLoopSDK.PPIHRVResult
+  public static func fromBatch(_ batch: SomaLoopSDK.HistoryBatch, policy: SomaLoopSDK.PPIHRVPolicy = .standard) throws -> [SomaLoopSDK.PPIHRVResult]
+}
 public enum CaptureMode : Swift.String, Swift.Codable, Swift.CaseIterable, Swift.Sendable {
   case ppgOnly, paired, accOnly
   public var title: Swift.String {
@@ -1023,6 +1086,9 @@ extension SomaLoopSDK.MeasurementKind : Swift.RawRepresentable {}
 extension SomaLoopSDK.SettingKind : Swift.Equatable {}
 extension SomaLoopSDK.SettingKind : Swift.Hashable {}
 extension SomaLoopSDK.SettingKind : Swift.RawRepresentable {}
+extension SomaLoopSDK.PPIHRVUnavailableReason : Swift.Equatable {}
+extension SomaLoopSDK.PPIHRVUnavailableReason : Swift.Hashable {}
+extension SomaLoopSDK.PPIHRVUnavailableReason : Swift.RawRepresentable {}
 extension SomaLoopSDK.ReplayBLETransport : Swift.Sendable {}
 extension SomaLoopSDK.WearStatus : Swift.Equatable {}
 extension SomaLoopSDK.WearStatus : Swift.Hashable {}
