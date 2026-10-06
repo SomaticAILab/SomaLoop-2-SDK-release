@@ -1,6 +1,25 @@
 import XCTest
 import SomaLoopSDK
 final class BinaryIntegrationTests:XCTestCase {
+    func testBinaryPPIRMSSDAndUnavailableJSON() throws {
+        let result = try PPIHRV.calculate(intervalsMilliseconds: (0..<50).map { $0 % 2 == 0 ? 800 : 840 })
+        XCTAssertEqual(try XCTUnwrap(result.rmssdMilliseconds), 40, accuracy: 1e-10)
+        XCTAssertEqual(result.quality, "screenedPPI")
+        XCTAssertEqual(result.unit, "ms")
+        XCTAssertEqual(result.algorithm, "ppi-rmssd")
+        let filtered = try PPIHRV.calculate(intervalsMilliseconds: Array(repeating: 800, count: 18) + [1400] + Array(repeating: 840, count: 18))
+        XCTAssertEqual(filtered.rmssdMilliseconds, 0)
+        XCTAssertEqual(filtered.retainedIntervalCount, 36)
+        XCTAssertEqual(filtered.rejectedIntervalCount, 1)
+        XCTAssertEqual(filtered.successiveDifferenceCount, 34)
+        XCTAssertEqual(try PPIHRV.calculate(intervalsMilliseconds: Array(repeating: 800, count: 35)).rmssdMilliseconds, 0)
+        XCTAssertEqual(try PPIHRV.calculate(intervalsMilliseconds: Array(repeating: 800, count: 34)).unavailableReason, .insufficientRetainedIntervals)
+        let missing = try PPIHRV.calculate(intervalsMilliseconds: [800, nil])
+        XCTAssertNil(missing.rmssdMilliseconds)
+        XCTAssertEqual(missing.unavailableReason, .invalidInterval)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(missing)) as? [String: Any])
+        XCTAssertTrue(json["rmssdMilliseconds"] is NSNull)
+    }
     func testBinaryACCAndBatteryContactAPIs()throws {
         XCTAssertEqual(CaptureMode.accOnly.rawValue,"acc_only")
         XCTAssertEqual(CaptureMode.accOnly.serverMode,"accOnly")

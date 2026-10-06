@@ -1,6 +1,6 @@
 # iOS 接入
 
-SomaLoop 2 SDK 0.1.9 / build 24 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
+SomaLoop 2 SDK 0.1.11 / build 27 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
 
 ## 安装
 
@@ -123,3 +123,7 @@ try await client.stopCapture()
 ```
 
 独立 ACC 会话支持保存、导出及同身份恢复，最多七天；Demo 提供独立 ACC 按钮和包数/样本数。`readWearState` 会短暂启动 PPG 接触检测，其观察时长不含写入与关闭确认时间。采集中读取电量或主动检查接触状态会返回 `busy`；电量充电码、物理单位及未确认的佩戴事件保持未知。升级须补齐新增枚举分支，并按[API 与错误码](API与错误码.md)处理停止未确认。
+
+## PPI RMSSD（0.1.11 正式算法）
+
+`let results = try PPIHRV.fromBatch(ppiBatch)` 从一次完整的 PPI 历史读取返回数值或 null／原因。有效 `rmssdMilliseconds` 可映射到 `hrv_rmssd`；缺失时跳过评分和提醒更新。默认策略、分组边界与质量存储见[数据与时间语义](数据与时间语义.md)。使用本版本完整二进制包，并重新编译消费者。
