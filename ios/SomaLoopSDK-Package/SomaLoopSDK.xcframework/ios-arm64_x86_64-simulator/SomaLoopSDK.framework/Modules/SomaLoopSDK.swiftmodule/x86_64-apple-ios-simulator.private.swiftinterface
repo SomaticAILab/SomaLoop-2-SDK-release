@@ -120,9 +120,7 @@ public struct BatteryReading : Swift.Codable, Swift.Equatable, Swift.Sendable {
   public var voltage: SomaLoopSDK.BatteryVoltage? {
     get
   }
-  public var readAt: Swift.Double? {
-    get
-  }
+  public var readAt: Swift.Double?
   public static func == (a: SomaLoopSDK.BatteryReading, b: SomaLoopSDK.BatteryReading) -> Swift.Bool
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
@@ -142,6 +140,29 @@ extension SomaLoopSDK.DecodedPacket {
   public var measurementValues: SomaLoopSDK.RealtimeMeasurementValues? {
     get
   }
+}
+public enum CaptureStopOutcome : Swift.String, Swift.Codable, Swift.Sendable {
+  case acknowledged, quiescent, unconfirmed, abandoned
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public struct CaptureStopResult : Swift.Codable, Swift.Sendable {
+  public let sessionID: Swift.String
+  public let outcome: SomaLoopSDK.CaptureStopOutcome
+  public let attempts: Swift.Int
+  public let reason: Swift.String
+  public let observedAt: Swift.Double
+  public var stopConfirmed: Swift.Bool {
+    get
+  }
+  public var cleanupPending: Swift.Bool {
+    get
+  }
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
 }
 public struct FirmwareVersion : Swift.Codable, Swift.Equatable, Swift.Comparable, Swift.Sendable {
   public let components: [Swift.Int]
@@ -570,8 +591,8 @@ public struct JournalRecord : Swift.Codable, Swift.Sendable {
   public var fileID: Swift.String?
   public var fileRecord: Swift.Int?
   public init(kind: Swift.String, data: Foundation.Data? = nil, detail: Swift.String? = nil, ppg: Swift.Bool = false, paired: Swift.Bool = false, time: Foundation.Date = Date(), uptime: Swift.Double = ProcessInfo.processInfo.systemUptime)
-  public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
+  public func encode(to encoder: any Swift.Encoder) throws
 }
 public struct CaptureStats : Swift.Codable, Swift.Sendable {
   public var accPackets: Swift.Int?, accSamples: Swift.Int?, accSequenceDiscontinuities: Swift.Int?
@@ -593,6 +614,8 @@ public struct SessionManifest : Swift.Codable, Swift.Sendable {
   public var id: Swift.String, device: SomaLoopSDK.DeviceProfile, mode: SomaLoopSDK.CaptureMode
   public var createdAt: Foundation.Date, plannedEndAt: Foundation.Date, endedAt: Foundation.Date?
   public var requested: Swift.Bool, cleanupPending: Swift.Bool, stopConfirmed: Swift.Bool
+  public var stopAttempts: Swift.Int?
+  public var stopResult: SomaLoopSDK.CaptureStopResult?
   public var status: Swift.String, stats: SomaLoopSDK.CaptureStats, rawFiles: [Swift.String]
   public var journalRecords: Swift.Int
   public var units: Swift.String
@@ -604,8 +627,8 @@ public struct SessionManifest : Swift.Codable, Swift.Sendable {
   public var rotationBytes: Swift.Int, checkpointSeconds: Swift.Int, renewalSeconds: Swift.Int
   public var rawRetention: Swift.String
   public init(device: SomaLoopSDK.DeviceProfile, mode: SomaLoopSDK.CaptureMode, duration: Foundation.TimeInterval)
-  public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
+  public func encode(to encoder: any Swift.Encoder) throws
 }
 public typealias CaptureSession = SomaLoopSDK.SessionManifest
 public enum SDKEvent : Swift.Sendable {
@@ -978,6 +1001,9 @@ public enum SomaContractAdapter {
   public var lastClockWriteEpoch: Swift.String? {
     get
   }
+  public var currentClockEpoch: Swift.String {
+    get
+  }
   public var researchStopConfirmed: Swift.Bool {
     get
   }
@@ -1011,6 +1037,8 @@ public enum SomaContractAdapter {
   public func eraseHistory(_ preparation: SomaLoopSDK.HistoryErasurePreparation, confirm: Swift.Bool, allowExperimental: Swift.Bool) async throws -> SomaLoopSDK.HistoryErasureReport
   public func readHistoryBatch(_ kind: SomaLoopSDK.HistoryKind, continuation: Swift.Bool = false, batchMultiplier: Swift.Int = 1, allowExperimental: Swift.Bool = false, utcOffsetMinutes: Swift.Int? = nil) async throws -> SomaLoopSDK.HistoryBatch
   public func readHistoryBatch(_ kind: SomaLoopSDK.HistoryKind, continuation: Swift.Bool = false, batchMultiplier: Swift.Int = 1, allowExperimental: Swift.Bool = false, allowUntested: Swift.Bool, utcOffsetMinutes: Swift.Int? = nil) async throws -> SomaLoopSDK.HistoryBatch
+  public func synchronizeHistory(_ kind: SomaLoopSDK.HistoryKind, since: SomaLoopSDK.DeviceCalendar? = nil, checkpoint: SomaLoopSDK.HistoryCheckpoint? = nil, allowExperimental: Swift.Bool = false, maximumPages: Swift.Int = 1000, maximumRecords: Swift.Int = 100000, useDeviceAnchor: Swift.Bool = false, utcOffsetMinutes: Swift.Int? = nil) async throws -> SomaLoopSDK.HistorySyncResult
+  public func synchronizeHistory(_ kind: SomaLoopSDK.HistoryKind, since: SomaLoopSDK.DeviceCalendar? = nil, checkpoint: SomaLoopSDK.HistoryCheckpoint? = nil, allowExperimental: Swift.Bool = false, allowUntested: Swift.Bool, maximumPages: Swift.Int = 1000, maximumRecords: Swift.Int = 100000, useDeviceAnchor: Swift.Bool = false, utcOffsetMinutes: Swift.Int? = nil) async throws -> SomaLoopSDK.HistorySyncResult
   public func synchronizeHistory(_ kind: SomaLoopSDK.HistoryKind, since: SomaLoopSDK.DeviceCalendar? = nil, checkpoint: SomaLoopSDK.HistoryCheckpoint? = nil, clockEpoch: Swift.String, allowExperimental: Swift.Bool = false, maximumPages: Swift.Int = 1000, maximumRecords: Swift.Int = 100000, useDeviceAnchor: Swift.Bool = false, utcOffsetMinutes: Swift.Int? = nil) async throws -> SomaLoopSDK.HistorySyncResult
   public func synchronizeHistory(_ kind: SomaLoopSDK.HistoryKind, since: SomaLoopSDK.DeviceCalendar? = nil, checkpoint: SomaLoopSDK.HistoryCheckpoint? = nil, clockEpoch: Swift.String, allowExperimental: Swift.Bool = false, allowUntested: Swift.Bool, maximumPages: Swift.Int = 1000, maximumRecords: Swift.Int = 100000, useDeviceAnchor: Swift.Bool = false, utcOffsetMinutes: Swift.Int? = nil) async throws -> SomaLoopSDK.HistorySyncResult
   nonisolated public func syncHistory(_ kind: SomaLoopSDK.HistoryKind) -> _Concurrency.AsyncThrowingStream<SomaLoopSDK.HistoryBatch, any Swift.Error>
@@ -1023,6 +1051,8 @@ public enum SomaContractAdapter {
   public func updateSettings(_ kind: SomaLoopSDK.SettingKind, values: [Swift.String : Swift.Int]) async throws
   public func startCapture(mode: SomaLoopSDK.CaptureMode, durationSeconds: Swift.Double = 86400) async throws -> SomaLoopSDK.CaptureSession
   public func stopCapture() async throws
+  public func stopCaptureWithResult() async throws -> SomaLoopSDK.CaptureStopResult?
+  public func abandonPendingCapture(sessionID: Swift.String, reason: Swift.String, confirm: Swift.Bool) async throws -> SomaLoopSDK.CaptureStopResult
   public func setHostBackground(_ background: Swift.Bool) async throws
   public func currentSession() async -> SomaLoopSDK.SessionManifest?
   public func exportSession(to root: Foundation.URL) async throws -> Foundation.URL
@@ -1056,6 +1086,9 @@ extension SomaLoopSDK.CaptureMode : Swift.RawRepresentable {}
 extension SomaLoopSDK.ChargingState : Swift.Equatable {}
 extension SomaLoopSDK.ChargingState : Swift.Hashable {}
 extension SomaLoopSDK.ChargingState : Swift.RawRepresentable {}
+extension SomaLoopSDK.CaptureStopOutcome : Swift.Equatable {}
+extension SomaLoopSDK.CaptureStopOutcome : Swift.Hashable {}
+extension SomaLoopSDK.CaptureStopOutcome : Swift.RawRepresentable {}
 extension SomaLoopSDK.CaptureHealthState : Swift.Equatable {}
 extension SomaLoopSDK.CaptureHealthState : Swift.Hashable {}
 extension SomaLoopSDK.CaptureHealthState : Swift.RawRepresentable {}

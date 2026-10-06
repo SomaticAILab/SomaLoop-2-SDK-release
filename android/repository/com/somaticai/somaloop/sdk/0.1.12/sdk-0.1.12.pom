@@ -3,14 +3,22 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.somaticai.somaloop</groupId>
-  <artifactId>experimental</artifactId>
-  <version>0.1.11</version>
+  <artifactId>sdk</artifactId>
+  <version>0.1.12</version>
   <packaging>aar</packaging>
+  <name>SomaLoop 2 SDK</name>
+  <description>SomaLoop 2 SDK — private beta wearable SDK</description>
   <dependencies>
     <dependency>
-      <groupId>com.somaticai.somaloop</groupId>
-      <artifactId>sdk</artifactId>
-      <version>0.1.11</version>
+      <groupId>org.jetbrains.kotlinx</groupId>
+      <artifactId>kotlinx-coroutines-android</artifactId>
+      <version>1.9.0</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlinx</groupId>
+      <artifactId>kotlinx-serialization-json</artifactId>
+      <version>1.7.3</version>
       <scope>compile</scope>
     </dependency>
     <dependency>

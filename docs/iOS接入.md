@@ -1,15 +1,15 @@
 # iOS 接入
 
-SomaLoop 2 SDK 0.1.11 / build 27 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
+SomaLoop 2 SDK 0.1.12 / build 28 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
 
 ## 安装
 
 1. 保持交付包 `ios/SomaLoopSDK-Package` 完整，在 Xcode 的 **Add Package Dependencies → Add Local** 中选中该目录，添加 `SomaLoopSDK` 产品；需要研究入口时另加 `SomaLoopExperimental`。
 2. 在 `Info.plist` 设置 `NSBluetoothAlwaysUsageDescription`。需要后台蓝牙时启用 **Background Modes → Uses Bluetooth LE accessories**，并按下述生命周期接入。
 3. 为 SDK 提供可写会话目录。SDK 文件在设备首次解锁后可访问；系统重启后首次解锁前不能保证恢复。
-4. 运行 Demo 时，先在 `ios/SomaLoopSDKDemo` 执行 `xcodegen generate`，再打开生成的 `SomaLoopSDKDemo.xcodeproj`，并配置签名团队。
+4. 安装完整 Xcode，并在 Xcode Settings 中选择 Command Line Tools；安装 Homebrew 后执行 `brew install xcodegen`。运行 Demo 时，先在 `ios/SomaLoopSDKDemo` 执行 `xcodegen generate`，再打开生成的 `SomaLoopSDKDemo.xcodeproj`，并配置签名团队。
 
-XCFramework 包含设备及模拟器架构。升级时替换完整 Package，保持主库与研究库版本一致。`SomaLoop.version` 为版本号，`SomaLoop.buildRevision` 为源码与构建输入指纹；数字构建号见随包 `build-identity.json` 的 `buildNumber`。
+XCFramework 包含设备及模拟器架构。已发布 0.1.11/build27 使用 Apple Swift 6.1.2 构建；包清单 tools-version=5.10 是清单解析要求，不是已验证的最低 Xcode 版本承诺。当前制品验证摘要见随包 release-report.json。升级时替换完整 Package，保持主库与研究库版本一致。`SomaLoop.version` 为版本号，`SomaLoop.buildRevision` 为源码与构建输入指纹；数字构建号见随包 `build-identity.json` 的 `buildNumber`。
 
 ## 发现与连接
 
@@ -77,7 +77,7 @@ func readSport(client: SomaLoopClient) async throws -> HistoryBatch {
 
 `complete` 与 `interruption == nil` 必须同时检查。需要续页时，仅在原连接、同类未结束读取中使用 `continuation: true`；跨连接恢复使用带 checkpoint 的 `synchronizeHistory`。详细字段和时间规则见[数据语义](数据与时间语义.md)。
 
-SDK 支持有效四字节 BCD 固件版本 ≥0.0.8.8，全部 15 类历史及闹钟读取为 C，默认直接读取。闹钟入口为 `readSettings(.alarms)`，只有完整列表才返回；需要保留部分结果时使用历史批次入口。各接口的固件范围和读取选项见 [API 与错误码](API与错误码.md)。
+SDK 支持有效四字节 BCD 固件版本 ≥0.0.8.8，全部 15 类历史（包含 alarms）及独立闹钟设置读取为 C，默认直接读取。闹钟入口为 `readSettings(.alarms)`，只有完整列表才返回；需要保留部分结果时使用历史批次入口。各接口的固件范围和读取选项见 [API 与错误码](API与错误码.md)。
 
 ## 限时原始 ECG
 
@@ -100,7 +100,7 @@ func recordRawECG(client: SomaLoopClient) async throws -> ECGRecording {
 
 每个逻辑蓝牙控制器长期持有一个客户端。正常断连和重连复用它；不同存活客户端使用不同且稳定的 `restorationIdentifier`，同一控制器跨进程沿用原标识。
 
-每个实际 `storageRoot` 只供一个客户端使用，多个客户端使用不同目录。交接同一目录前，先等待原客户端的 `shutdown()` 完成；`shutdown()` 完成本轮停止尝试及会话存储关闭后释放目录；交接前也要等待宿主发起的其他 SDK 调用结束。目录被占用或失效时操作返回 `storageFailure`。保留 `.somatic-storage.lock`、会话目录及待停止记录，不通过删除文件解除占用；锁文件存在本身不表示仍被占用。目录保护独立于蓝牙控制器标识和设备身份核对，交付状态见[0.1.8 变更](../CHANGELOG.md)。
+每个实际 `storageRoot` 只供一个客户端使用，多个客户端使用不同目录。交接同一目录前，先等待原客户端的 `shutdown()` 完成；`shutdown()` 完成本轮停止尝试及会话存储关闭后释放目录；交接前也要等待宿主发起的其他 SDK 调用结束。目录被占用或失效时操作返回 `storageFailure`。保留 `.somatic-storage.lock`、会话目录及待停止记录，不通过删除文件解除占用；锁文件存在本身不表示仍被占用。目录保护独立于蓝牙控制器标识和设备身份核对，交付状态见[版本记录](../CHANGELOG.md)。
 
 需要继续本地待处理采集时，在启动初期调用 `resumePendingSession()`；多条待处理会话返回 `busy`，应明确选择 `resumeSession(directory:)`。恢复可能重连设备并继续尚未请求停止的会话，宿主界面应展示相应采集状态。
 
@@ -110,20 +110,27 @@ func recordRawECG(client: SomaLoopClient) async throws -> ECGRecording {
 
 整体结束使用时调用 `shutdown()`，结束观察任务并释放引用。蓝牙管理器释放和物理断链回调可能晚于方法返回。强制退出、禁用蓝牙、没电及系统后台调度可能中断会话；宿主应保存停止意图并处理恢复结果。会话文件与恢复流程见 [采集与马达节拍](采集与马达节拍.md)。
 
-## 0.1.9：独立 ACC、电量与接触状态
+## 独立 ACC、电量与接触状态
 
 连接就绪且客户端空闲时读取电量或短时检查接触状态；完成后再开始采集：
 
 ```swift
 let battery = try await client.readBattery()
 let contact = try await client.readWearState(timeoutSeconds: 5)
-let session = try await client.startCapture(mode: .accOnly, durationSeconds: 3600)
-// 宿主需要停止时：
-try await client.stopCapture()
+let session = try await client.startCapture(mode: .accOnly, durationSeconds: 60)
+// 用户停止或完成业务采集后：
+let stop = try await client.stopCaptureWithResult()
+print(stop?.outcome as Any, stop?.cleanupPending as Any)
+let export = try await client.exportSession(to: root.appendingPathComponent("Exports"))
+print(export)
 ```
 
 独立 ACC 会话支持保存、导出及同身份恢复，最多七天；Demo 提供独立 ACC 按钮和包数/样本数。`readWearState` 会短暂启动 PPG 接触检测，其观察时长不含写入与关闭确认时间。采集中读取电量或主动检查接触状态会返回 `busy`；电量充电码、物理单位及未确认的佩戴事件保持未知。升级须补齐新增枚举分支，并按[API 与错误码](API与错误码.md)处理停止未确认。
 
 ## PPI RMSSD（0.1.11 正式算法）
 
-`let results = try PPIHRV.fromBatch(ppiBatch)` 从一次完整的 PPI 历史读取返回数值或 null／原因。有效 `rmssdMilliseconds` 可映射到 `hrv_rmssd`；缺失时跳过评分和提醒更新。默认策略、分组边界与质量存储见[数据与时间语义](数据与时间语义.md)。使用本版本完整二进制包，并重新编译消费者。
+`let results = try PPIHRV.fromBatch(ppiBatch)` 从一次完整的 PPI 历史读取返回数值或 null／原因。有效 `rmssdMilliseconds` 可映射到 `hrv_rmssd`；缺失时跳过评分和提醒更新。默认策略、分组边界与质量存储见[数据与时间语义](数据与时间语义.md)。使用本版本完整二进制包，并重新编译应用。
+
+`readWearState` 仅支持 `00000808-260604`，观察时长 1–10 秒；`rawACC` 持久采集仅在该固件为默认可用，其他固件的实验能力状态不等于 `startCapture` 已放行。`durationSeconds` 必须有限、>0 且 ≤604800，省略为 86400。
+
+`stopCaptureWithResult` 的 `acknowledged`、`quiescent` 均释放本地会话；`unconfirmed` 保留待清理，最多两次停止尝试。只在 `acknowledged` 时 `stopConfirmed=true`。需要人工结束本地待处理时，按[采集与马达节拍](采集与马达节拍.md)调用 `abandonPendingCapture`；不要删除会话目录。

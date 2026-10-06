@@ -1,6 +1,35 @@
 import XCTest
 import SomaLoopSDK
 final class BinaryIntegrationTests:XCTestCase {
+    func testStopResultClockAndFixedDateBinarySurface()async throws {
+        XCTAssertEqual(SomaLoop.version,Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String)
+        let result=try JSONDecoder().decode(CaptureStopResult.self,from:Data(#"{"sessionID":"test","outcome":"quiescent","attempts":1,"reason":"acc_quiet_3_seconds","observedAt":1700000000}"#.utf8))
+        XCTAssertFalse(result.stopConfirmed);XCTAssertFalse(result.cleanupPending)
+        let record=JournalRecord(kind:"example",time:Date(timeIntervalSince1970:1700000000))
+        let data=try JSONEncoder().encode(record)
+        let json=try XCTUnwrap(JSONSerialization.jsonObject(with:data) as? [String:Any])
+        XCTAssertEqual(json["time"] as? Double,1700000000000)
+        XCTAssertEqual(try JSONDecoder().decode(JournalRecord.self,from:data).time,record.time)
+        let device=DiscoveredDevice(id:"synthetic-issue45",name:nil,rssi:-45)
+        let exchanges=try [
+            ReplayExchange(commandHex:"22000000000000000000000000000022",notificationHex:["22010203040506000000000000000037"]),
+            ReplayExchange(commandHex:"27000000000000000000000000000027",notificationHex:["27000008082606040000000000000067"]),
+            ReplayExchange(commandHex:"41000000000000000000000000000041",notificationHex:["41260929123045000000000000000020"]),
+            ReplayExchange(commandHex:"13000000000000000000000000000013",notificationHex:["134b02341200000000000000000000a6"])
+        ]
+        let replay=try ReplayBLETransport(device:device,exchanges:exchanges)
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let client=SomaLoopClient(replay:replay,storageRoot:root)
+        defer{try? FileManager.default.removeItem(at:root)}
+        do {
+            try await client.connect(device)
+            let epoch=await client.currentClockEpoch;XCTAssertEqual(epoch,"unspecified")
+            let battery=try await client.readBattery();XCTAssertNotNil(battery.readAt)
+            let stop=try await client.stopCaptureWithResult();XCTAssertNil(stop)
+            do{_ = try await client.abandonPendingCapture(sessionID:"absent",reason:"example",confirm:true);XCTFail()}catch{XCTAssertEqual(error as? SDKError,.invalidArgument)}
+        }catch{await client.shutdown();throw error}
+        await client.shutdown()
+    }
     func testBinaryPPIRMSSDAndUnavailableJSON() throws {
         let result = try PPIHRV.calculate(intervalsMilliseconds: (0..<50).map { $0 % 2 == 0 ? 800 : 840 })
         XCTAssertEqual(try XCTUnwrap(result.rmssdMilliseconds), 40, accuracy: 1e-10)
