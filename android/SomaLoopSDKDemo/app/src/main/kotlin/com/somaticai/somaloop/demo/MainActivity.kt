@@ -125,14 +125,22 @@ class MainActivity:Activity(){
         fun button(label:String,action:()->Unit):Button=Button(this).apply{text=label;setOnClickListener{action()};panel.addView(this)}
         fun supportedButton(label:String,capability:String?,experimental:Boolean=false,action:()->Unit){val b=button(label,action);val reason=text("采集服务尚未连接",13f);b.isEnabled=false;capabilityButtons+=CapabilityButton(b,reason,capability,experimental)}
         fun recoveryButton(label:String,action:()->Unit){val b=button(label,action);b.isEnabled=false;recoveryButtons+=b to text("采集服务尚未连接",13f)}
-        text("SomaLoop 2 SDK Demo",26f);text("${SomaLoop.product} · ${SomaLoop.version}");text("本机保存 · Android 24 小时长测待验收",13f)
+        text("SomaLoop 2 SDK Demo",26f);text("${SomaLoop.product} · ${SomaLoop.version}");text("采集数据保存在本机",13f)
         status=text("请授权蓝牙后扫描，并按设备标识后缀选择手环");stats=text("尚未开始采集")
         button("授权并扫描手环"){if(permissionsGranted())scan()else requestPermissions(requiredPermissions(),101)}
         devices=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};panel.addView(devices)
         supportedButton("PPG-only · 24 小时","ppgOnly"){start(CaptureMode.ppgOnly)}
         supportedButton("PPG + ACC · 24 小时","ppgAccPaired"){start(CaptureMode.paired)}
         supportedButton("独立 ACC · 24 小时","rawACC"){start(CaptureMode.accOnly)}
-        recoveryButton("停止采集"){runDevice{sdk().stopCapture();status.text="停止意图已保存，请核对停止确认状态"}}
+        supportedButton("独立 ACC · 60 秒","rawACC"){start(CaptureMode.accOnly,60.0)}
+        recoveryButton("停止采集"){runDevice{val result=sdk().stopCaptureWithResult();status.text="停止：${result?.outcome} · 待处理：${result?.cleanupPending}"}}
+        recoveryButton("结束本地待处理会话"){run{
+            val session=sdk().currentSession()
+            if(session==null||session.requested||!session.cleanupPending){status.text="没有可结束的本地待处理会话"}
+            else android.app.AlertDialog.Builder(this@MainActivity).setTitle("结束本地会话")
+                .setMessage("设备停止状态仍未确认。此操作只保存本地结束状态。")
+                .setNegativeButton("取消",null).setPositiveButton("确认结束"){_,_->runDevice{val result=sdk().abandonPendingCapture(session.id,"Demo 用户确认结束本地待处理",true);status.text="本地结束：${result.outcome}"}}.show()
+        }}
         recoveryButton("恢复待处理会话"){runDevice{if(!sdk().resumePendingSession())status.text="没有待恢复会话"}}
         button("导出会话 ZIP"){run{snapshot=sdk().exportSession(File(cacheDir,"SomaLoopExports"));startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).setType("application/zip").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE,"SomaLoop-${snapshot!!.name}.zip"),102)}}
         text("马达振动 · 默认振动节拍为短、短、长、休止，共 2 秒。",13f)
@@ -141,7 +149,9 @@ class MainActivity:Activity(){
         recoveryButton("立即停止振动"){runDevice{sdk().stopHaptics();status.text="停止已请求；请核对手环是否完全停止"}}
         recoveryButton("确认手环已完全停止"){runDevice{val h=sdk().currentHaptics()?:throw SDKException(ErrorCode.invalidArgument);sdk().confirmHapticsStopped(h.id);status.text="已记录使用者停止确认"}}
         button("导出振动日志 JSON"){run{snapshot=sdk().exportHaptics(File(cacheDir,"SomaLoopExports"));startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE,snapshot!!.name),103)}}
-        supportedButton("读取设备信息",null){runDevice{val packets=sdk().readDeviceInfo();val capabilities=sdk().capabilitySnapshot();status.text="固件 ${capabilities.firmwareVersion?:"未知"} / ${capabilities.firmwareDate?:"日期未知"}\n电量 ${packets.firstOrNull{it.opcode==0x13}?.fields?.get("batteryPercent")?:"未知"}%"}}
+        supportedButton("读取设备信息",null){runDevice{val result=sdk().readDeviceInfoPartial();val value=result.batteryReading;status.text="电量 ${value?.percentage?.value?.let{"$it%"}?:"未知"} · ${value?.percentage?.quality?:"无通知"}"}}
+        supportedButton("读取电量",null){runDevice{val value=sdk().readBattery();status.text="电量 ${value.percentage.value?.let{"$it%"}?:"未知"} · ${value.percentage.quality} · 接收 ${value.readAt}"}}
+        supportedButton("检查接触状态 · 5 秒","ppgAccPaired"){runDevice{val value=sdk().readWearState(5.0);status.text="接触 ${value.state} · ${value.source}"}}
         supportedButton("同步温度历史并对账","history:98"){runDevice{val b=sdk().syncHistoryRecords(HistoryKind.temperature,HistorySyncOptions(checkpoint=historyCheckpoint));historyCheckpoint=b.checkpoint;status.text="新增 ${b.records.size} / 重复 ${b.duplicateRecords} / 页数 ${b.pages} / 完整 ${b.complete} / 中断 ${b.interruption}\n演示检查点仅保存在内存；生产应与入库事务一起保存"}}
         button("查看能力与限制"){run{val snapshot=sdk().capabilitySnapshot();status.text=(snapshot.capabilities+snapshot.history.mapKeys{"history:${it.key}"}).entries.joinToString("\n"){"${it.key}: ${it.value.state} — ${it.value.reason}"}}}
         supportedButton("读取设备时钟（不推断时区）",null){runDevice{val clock=sdk().readDeviceClock();status.text="设备日历 ${clock.deviceCalendar}\n往返 ${clock.roundTripSeconds}s / 偏移需要明确设备UTC偏移"}}
@@ -195,6 +205,9 @@ class MainActivity:Activity(){
         launch{observeSafely(binding){connected.events().collect{event->if(!capabilityState.isCurrent(binding))return@collect;when(event){
         is SDKEvent.Discovery->{val d=event.device;if(d.id !in seen){val button=Button(this@MainActivity).apply{text="设备 ${d.id.filter{it.isLetterOrDigit()}.takeLast(6).uppercase(java.util.Locale.ROOT)} · ${d.rssi} dBm";setOnClickListener{this@MainActivity.run{sdk().stopScan();sdk().connect(d)}}};seen[d.id]=button;devices.addView(button)}}
         is SDKEvent.Device->{historyCheckpoint=null;status.text="固件 ${event.profile.firmwareVersion?.dotted?:"未知"} / ${event.profile.firmwareDate?:"日期未知"} · ${event.profile.state}";refreshCapabilities(connected,binding)}
+        is SDKEvent.Battery->status.text="电量 ${event.reading.percentage.value?.let{"$it%"}?:"未知"} · ${event.reading.percentage.quality} · 接收 ${event.observedAt}"
+        is SDKEvent.SkinContact->status.text="接触 ${event.reading.state} · ${event.reading.source}"
+        is SDKEvent.ACC->stats.text="收到 ACC：${event.frame.samples.size} 组三轴 · 序号 ${event.frame.sequence}"
         is SDKEvent.Health->status.text="采集状态：${event.health.state} / ${event.health.reason}"
         is SDKEvent.Capture->{capabilityState.updateSession(binding,event.session.requested,event.session.cleanupPending);renderAvailability()}
         is SDKEvent.Haptics->{capabilityState.updateHaptics(binding,event.report.pendingStop);renderAvailability();status.text="振动 ${event.report.status} / ${event.report.error?:"无软件错误"} / 待确认停止 ${event.report.pendingStop}"}
@@ -204,12 +217,12 @@ class MainActivity:Activity(){
         launch{observeSafely(binding){while(currentCoroutineContext().isActive){refreshRuntime(connected,binding);delay(2000)}}}
     }}
     private fun scan(){seen.clear();devices.removeAllViews();run{sdk().scan()}}
-    private fun start(mode:CaptureMode){
+    private fun start(mode:CaptureMode,durationSeconds:Double=86400.0){
         if(!permissionsGranted()){status.text="请先授权蓝牙与通知";return}
         val connected=client?:return
         val binding=capabilityState.beginOperation()?:return
         capabilityState.captureStartDispatched(binding);renderAvailability()
-        try{SomaLoopCaptureService.startCapture(this,mode)}catch(e:Exception){showFailure(e);run{refreshRuntime(connected,binding)}}
+        try{SomaLoopCaptureService.startCapture(this,mode,durationSeconds)}catch(e:Exception){showFailure(e);run{refreshRuntime(connected,binding)}}
         finally{capabilityState.endOperation(binding);renderAvailability()}
     }
     private fun requiredPermissions():Array<String> = (if(Build.VERSION.SDK_INT>=31)listOf(Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT)else listOf(Manifest.permission.ACCESS_FINE_LOCATION)).let{if(Build.VERSION.SDK_INT>=33)it+Manifest.permission.POST_NOTIFICATIONS else it}.toTypedArray()

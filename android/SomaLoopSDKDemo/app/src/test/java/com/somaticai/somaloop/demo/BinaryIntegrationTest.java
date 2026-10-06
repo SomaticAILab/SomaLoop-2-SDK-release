@@ -7,6 +7,16 @@ import kotlinx.serialization.json.JsonObject;
 import kotlinx.serialization.json.JsonPrimitive;
 
 public final class BinaryIntegrationTest {
+    @Test public void stopResultClockAndServiceDurationBinarySurface() throws Exception {
+        CaptureStopResult result = new CaptureStopResult("test", CaptureStopOutcome.quiescent, 1, "acc_quiet_3_seconds", 1700000000.0);
+        assertFalse(result.getStopConfirmed()); assertFalse(result.getCleanupPending());
+        assertNotNull(SomaLoopJava.class.getMethod("stopCaptureWithResult", SomaLoopJava.Callback.class));
+        assertNotNull(SomaLoopJava.class.getMethod("abandonPendingCapture", String.class, String.class, boolean.class, SomaLoopJava.Callback.class));
+        assertNotNull(SomaLoopJava.class.getMethod("currentClockEpoch"));
+        assertNotNull(SomaLoopCaptureService.class.getMethod("startCapture", android.content.Context.class, CaptureMode.class, double.class));
+        BatteryReading reading = new BatteryReading(new ReportedValue(0, 0.0, "percent", "raw"), "13", 1700000000.0);
+        assertEquals(1700000000.0, reading.getReadAt(), 0.0);
+    }
     @Test public void binaryPPIRMSSDAndUnavailableJSON() {
         java.util.List<Double> intervals = new java.util.ArrayList<>();
         for (int i = 0; i < 50; i++) intervals.add(i % 2 == 0 ? 800.0 : 840.0);

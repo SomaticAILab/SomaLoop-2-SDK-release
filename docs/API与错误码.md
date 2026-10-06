@@ -10,6 +10,12 @@ Swift 使用 actor 和 `async/await`；Kotlin 主要使用 `suspend` 与 `Flow`�
 | 扫描与连接 | `scan`、`stopScan`、`connect`、`disconnect` | 同名 |
 | 宿主系统连接列表 | `retrieveConnectedDevices` | 无对应入口（仅 Apple 平台） |
 | 能力 | `capabilities`、`capabilitySnapshot` | 同名 |
+| 电量 / 接触状态 | `readBattery`、`readWearState` | 同名；Java 使用 Callback |
+| 时钟纪元 | `currentClockEpoch`、`lastClockWriteAttempt` | Kotlin 同名属性；Java `currentClockEpoch()` |
+| 停止结果 / 本地恢复 | `stopCaptureWithResult`、`abandonPendingCapture` | 同名；Java 使用 Callback |
+| 采集恢复 / 生命周期 | `resumePendingSession`、`resumeSession`、`setHostBackground`、`shutdown` | 同名 |
+| 数据接收状态 | `captureHealth` | `captureHealth`、`captureDataStatus` |
+| PPI HRV | `PPIHRV.calculate`、`fromHistory`、`fromBatch` | 同名 |
 | 设备信息 | `readDeviceInfoPartial`、`readDeviceInfo` | 同名 |
 | 历史批次 | `readHistoryBatch` | 同名 |
 | 逐页流 | `syncHistory` | Kotlin 同名；Java 使用批次或同步结果入口 |
@@ -42,7 +48,7 @@ Swift 使用 actor 和 `async/await`；Kotlin 主要使用 `suspend` 与 `Flow`�
 
 历史类型为 `activity`、`steps`、`sleep`、`heartRate`、`singleHeartRate`、`hrv`、`alarms`、`sport`、`temperature`、`ppi`、`spo2`、`sleepActivity`、`sleepDebug`、`systemEvents`、`powerDebug`。这 15 类和闹钟设置读取均为 C，默认无需读取开关。`historyByKind` 以这些名称为键；原 `history` 表保留。Java 使用 `ApiViews.historyByKind(snapshot)`。
 
-raw ECG 和马达默认可调用。联合采集、校时及历史时间规则仅使用 **0.0.8.8／固件日期 260604** 配置；raw ACC 在同一固件日期为 C，可通过 `startCapture(accOnly)` 持久采集；其他准入固件保持 E，使用研究入口，实时诊断为 U。
+raw ECG 和马达默认可调用。联合采集、校时及历史时间规则仅使用 **0.0.8.8／固件日期 260604** 配置；raw ACC 在同一固件日期为 C，可通过 `startCapture(accOnly)` 持久采集；其他准入固件保持 E，普通 startCapture 不放行，实时诊断为 U。
 
 `allowExperimental`／`allowUntested` 读取重载保留兼容，仅控制历史和设置读取；它们不绕过最低固件、`unsupported` 或严格解码，也不启用校时、清除或研究流。
 
@@ -82,10 +88,34 @@ raw ECG 和马达默认可调用。联合采集、校时及历史时间规则仅
 
 Swift 使用 `SDKError`；Kotlin 使用 `SDKException.code`，Java 回调使用 `ErrorCode`。按错误码处理，不解析自由文本。部分结果对象可同时含 `interruption`，应与方法返回值一并保存。
 
-## 0.1.9 接口补充
+## 电量、接触状态与独立 ACC
 
 `startCapture(accOnly)` 使用持久会话，只开启 ACC；默认一天、最多七天，支持同身份恢复及导出。`ACCFrame` 含六组有符号 XYZ 原始计数，不提供已校准单位或样本时间。
 
 `readBattery` 是空闲时的单条读取；`chargingStateRaw` 和 `voltage.rawValue` 分别保留 SDK 解码的原始充电码和无符号电压值。充电状态、缩放及单位未经确认，枚举为unknown，物理值和单位为null。采集中仍busy，只有收到实际电量通知时才发电量事件，不保证固件主动推送。
 
-`readWearState` 在00000808-260604上短暂打开PPG/调试，默认观察5秒（另计写入和关闭超时），返回固件接触状态，不留采集目录；忙时busy、无信号unknown、关闭失败stopUnconfirmed并断连。采集中的skinContact事件独立解析完整TOUCH/touch_flag行；未确认语义的设备佩戴事件保留unknown，touch_value阈值未知。未接触时宿主应提示调整佩戴或停止PPG，避免无数据重启循环。旧二进制尚无这些新增接口，升级需重编译并补齐新枚举分支。
+`readWearState` 在00000808-260604上短暂打开PPG/调试，观察时长须为 1–10 秒，默认 5 秒（另计写入和关闭超时），返回固件接触状态，不留采集目录；忙时busy、无信号unknown、关闭失败stopUnconfirmed并断连。采集中的skinContact事件独立解析完整TOUCH/touch_flag行；未确认语义的设备佩戴事件保留unknown，touch_value阈值未知。未接触时宿主应提示调整佩戴或停止PPG，避免无数据重启循环。旧二进制尚无这些新增接口，升级需重编译并补齐新枚举分支。
+
+## SDKEvent 总表
+
+| Swift case | Kotlin / Java 类型 | 处理 |
+| --- | --- | --- |
+| discovery | Discovery | 按设备 id 更新扫描列表 |
+| connection | Connection | 更新连接状态，不把连接成功当作已有测量数据 |
+| device | Device | 保存当前识别信息和能力 |
+| raw | Raw | 原始收发日志，接收时间见 JournalRecord |
+| packetDiagnostic | Diagnostic | 保留未知/异常包形状 |
+| packet | Packet | 已解码包，不重复计入类型化结果 |
+| paired | Paired | 完整联合帧 |
+| acc | ACC | 六组三轴原始计数 |
+| skinContact | SkinContact | 固件接触状态，可为 unknown |
+| battery | Battery | 类型化电量和接收 Unix 秒 |
+| capture | Capture | 会话状态及 stopResult |
+| captureHealth | Health | idle / waitingForFirstPacket / receiving / noData / recovering / stopped |
+| clock | Clock | 时钟读取快照 |
+| clockSynchronized | ClockSynchronized | 校时结果 |
+| clockWriteAttempt | ClockWriteAttempted | 已记录的校时尝试及新纪元 |
+| haptics | Haptics | 马达报告与待停止状态 |
+| error | Failure | 按错误码处理；不能仅因收到错误丢弃已收数据 |
+
+事件不是每个请求的唯一返回通道。停止结果应检查方法结果或 capture 会话；异步事件接收任务应先于扫描/读取启动。Swift 升级时补齐 switch 分支，Kotlin/Java 同样保留未知扩展处理。

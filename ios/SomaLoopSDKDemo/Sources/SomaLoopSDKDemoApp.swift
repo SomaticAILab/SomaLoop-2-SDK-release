@@ -6,6 +6,9 @@ import SomaLoopExperimental
     @Published var devices=[DiscoveredDevice]()
     @Published var deviceState=DemoConnectionState()
     @Published var status="选择手环后连接"
+    @Published var batteryText="电量未知"
+    @Published var contactText="接触状态未知"
+    @Published var accSamples=0
     @Published var busy=false
     @Published var runtime=DemoRuntimeState()
     @Published var exportURL:URL?
@@ -27,6 +30,9 @@ import SomaLoopExperimental
             if s == .ready {deviceState.receive(await client.capabilitySnapshot());await refreshRuntime()}
         case .device(let p):
             if deviceState.connection == .ready {profile=p;deviceState.receive(await client.capabilitySnapshot())}
+        case .battery(let value,let at):batteryText="电量：\(value.percentage.value.map{String($0)+"%"} ?? "未知") · \(value.percentage.quality) · 接收 \(at)"
+        case .skinContact(let value):contactText="接触：\(value.state.rawValue) · \(value.source)"
+        case .acc(let frame):accSamples+=frame.samples.count
         case .captureHealth(let value):health=value
         case .capture(let s):manifest=s
         case .haptics(let r):haptics=r
@@ -55,8 +61,8 @@ import SomaLoopExperimental
     }
     func scan(){run(.scan){self.devices=[];try await self.client.scan();self.status="扫描中，选择设备编号连接"}}
     func connect(_ d:DiscoveredDevice){run(.connect){await self.client.stopScan();try await self.client.connect(d);self.status="已读取设备身份与固件"}}
-    func start(_ mode:CaptureMode){run(.capture(mode == .accOnly ? "rawACC" : mode == .ppgOnly ? "ppgOnly":"ppgAccPaired")){self.manifest=try await self.client.startCapture(mode:mode);self.status="计划采集 24 小时，实际连续性以日志为准"}}
-    func stop(){run(.stopCapture){try await self.client.stopCapture();self.manifest=await self.client.currentSession();self.status=self.manifest?.stopConfirmed==true ? "手环已确认停止":"停止意图已保存，等待设备关闭确认"}}
+    func start(_ mode:CaptureMode,durationSeconds:Double=86400){run(.capture(mode == .accOnly ? "rawACC" : mode == .ppgOnly ? "ppgOnly":"ppgAccPaired")){self.manifest=try await self.client.startCapture(mode:mode,durationSeconds:durationSeconds);self.status="计划采集 \(durationSeconds) 秒"}}
+    func stop(){run(.stopCapture){let result=try await self.client.stopCaptureWithResult();self.manifest=await self.client.currentSession();self.status="停止结果：\(result?.outcome.rawValue ?? "无会话") · 待处理：\(result?.cleanupPending ?? false)"}}
     func export(){run(.exportCapture){let root=FileManager.default.temporaryDirectory.appendingPathComponent("SomaLoopExports");self.exportURL=try await self.client.exportSession(to:root);self.status="已生成带 SHA-256 校验值的快照"}}
 
 }
@@ -67,8 +73,9 @@ import SomaLoopExperimental
 }
 struct DemoView:View {
     @ObservedObject var model:DemoModel
+    @State private var confirmAbandon=false
     var body:some View{NavigationView{Form{
-        Section{Text("SomaLoop 2 SDK").font(.headline);Text("版本 \(SomaLoop.version)").foregroundColor(.secondary);Text("本机保存 · iOS 24 小时长测待验收").font(.caption)}
+        Section{Text("SomaLoop 2 SDK").font(.headline);Text("版本 \(SomaLoop.version)").foregroundColor(.secondary);Text("采集数据保存在本机").font(.caption)}
         Section("设备 · \(model.deviceState.connection.rawValue)"){
             Button("扫描附近的手环",action:model.scan).demoAvailability(model.disabledReason(.scan))
             ForEach(model.devices,id:\.id){d in Button(action:{model.connect(d)}){VStack(alignment:.leading){Text("手环 · \(d.id.suffix(6).uppercased())");Text((d.rssi == 127 ? "信号未知":"\(d.rssi) dBm") + " · \(d.id)").font(.caption).foregroundColor(.secondary)}}.demoAvailability(model.disabledReason(.connect))}
@@ -78,8 +85,18 @@ struct DemoView:View {
             Button("开始 PPG-only · 24 小时",action:{model.start(.ppgOnly)}).demoAvailability(model.disabledReason(.capture("ppgOnly")))
             Button("开始 PPG + ACC · 24 小时",action:{model.start(.paired)}).demoAvailability(model.disabledReason(.capture("ppgAccPaired")))
             Button("开始独立 ACC · 24 小时",action:{model.start(.accOnly)}).demoAvailability(model.disabledReason(.capture("rawACC")))
+            Button("独立 ACC · 60 秒",action:{model.start(.accOnly,durationSeconds:60)}).demoAvailability(model.disabledReason(.capture("rawACC")))
+            Text("ACC 事件样本：\(model.accSamples)").font(.caption)
             if let health=model.health{Text("\(health.state.rawValue) · \(health.reason)").font(.caption)}
             Button("停止采集",role:.destructive,action:model.stop).demoAvailability(model.disabledReason(.stopCapture))
+            if let pending=model.manifest,!pending.requested,pending.cleanupPending {
+                Button("结束本地待处理会话",role:.destructive){confirmAbandon=true}
+                    .demoAvailability(model.disabledReason(.stopCapture))
+                    .confirmationDialog("仅结束本地会话，设备停止状态仍未确认",isPresented:$confirmAbandon,titleVisibility:.visible){
+                        Button("确认结束本地会话",role:.destructive){model.run(.stopCapture){let result=try await model.client.abandonPendingCapture(sessionID:pending.id,reason:"Demo 用户确认结束本地待处理",confirm:true);model.manifest=await model.client.currentSession();model.status="本地结束：\(result.outcome.rawValue)"}}
+                        Button("取消",role:.cancel){}
+                    }
+            }
             if let s=model.manifest{Text("\(s.mode.title) · \(s.status)");Text("ACC 包：\(s.stats.accPackets ?? 0) · 样本：\(s.stats.accSamples ?? 0)");Text("PPG 包：\(s.stats.ppgPackets) · 样本：\(s.stats.ppgSamples)");Text("联合帧：\(s.stats.pairedFrames) · PPG：\(s.stats.pairedPPG) · MEMS：\(s.stats.memsTriples)");Text("两路数组独立保存，没有逐点时间戳或一一配对。").font(.caption)}
             Button("导出会话快照",action:model.export).demoAvailability(model.disabledReason(.exportCapture))
         }
@@ -95,6 +112,9 @@ struct DemoView:View {
             }
         }
         Section("常规接口"){
+            Text(model.batteryText);Text(model.contactText)
+            Button("读取电量"){model.run(.deviceInfo){let value=try await model.client.readBattery();model.status="电量：\(value.percentage.value.map{String($0)+"%"} ?? "未知") · \(value.percentage.quality)"}}.demoAvailability(model.disabledReason(.deviceInfo))
+            Button("检查接触状态 · 5 秒"){model.run(.capture("ppgAccPaired")){let value=try await model.client.readWearState(timeoutSeconds:5);model.status="接触：\(value.state.rawValue) · \(value.source)"}}.demoAvailability(model.disabledReason(.capture("ppgAccPaired")))
             Button("读取设备信息"){model.run(.deviceInfo){let d=try await model.client.readDeviceInfo();model.status=d.filter{$0.opcode != 0x3e}.map{"0x\(String($0.opcode,radix:16)) \($0.fields)"}.joined(separator:"\n")}}.demoAvailability(model.disabledReason(.deviceInfo))
             Button("读取温度历史一批"){model.run(.history(.temperature)){let b=try await model.client.readHistoryBatch(.temperature);model.status="记录 \(b.records.count) / 通知 \(b.notificationCount) / 结束标记 \(b.complete) / 中断 \(String(describing:b.interruption))"}}.demoAvailability(model.disabledReason(.history(.temperature)))
             Button("心率测量 · 40 秒"){model.run(.feature("measurements")){let d=try await model.client.measure(.heartRate);model.status="收到 \(d.count) 个实时结果"}}.demoAvailability(model.disabledReason(.feature("measurements")))
