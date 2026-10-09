@@ -7,15 +7,17 @@
     "otherBinaryFiles": 60,
     "archives": 13,
     "jvmClasses": 3135,
-    "binaryPlists": 4
+    "binaryPlists": 4,
+    "reviewedSwiftInstructionLiterals": 1
   },
   "unexpectedCount": 0,
-  "allowedCount": 0,
+  "allowedCount": 10,
   "passed": true,
   "hardwareExceptionsAllowed": false,
+  "reviewedDiscoveryCompatibilityLiteralsAllowed": true,
   "coverageLimits": "Decoded text/metadata and binary strings; no OCR, visual logo recognition, originality or legal-rights determination.",
-  "scannerSHA256": "b262113e7f756b28466244e49285e1519af9e3b475dbf453b2c78dad5da873b3",
-  "inputManifestSHA256": "2f34eb894a8843968e8d90cc487e93d9a85fc943c49d8823431308dba4fcbdb0",
+  "scannerSHA256": "bdde604632889bf1e61fc98439dff65dd08e5040d503cc71f73278acac36cf6a",
+  "inputManifestSHA256": "4caed487fdd511805fb257532774965d51b54b1f2a980bbddc8fefb95bbd2995",
   "inputFiles": 122,
-  "policy": "no static hardware-name exceptions; third-party notices retained"
+  "policy": "only reviewed factory-discovery literals in scoped runtime/docs/tests; no general hardware-name exceptions; third-party notices retained"
 }

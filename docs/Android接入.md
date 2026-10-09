@@ -1,6 +1,6 @@
 # Android / Java 接入
 
-SomaLoop 2 SDK 0.1.14 / build 31 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
+SomaLoop 2 SDK 0.1.15 / build 32 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
 
 ## 安装与构建
 
@@ -18,8 +18,8 @@ dependencyResolutionManagement {
 
 // app/build.gradle.kts
 dependencies {
-    implementation("com.somaticai.somaloop:sdk:0.1.14")
-    implementation("com.somaticai.somaloop:experimental:0.1.14") // 研究入口，可选
+    implementation("com.somaticai.somaloop:sdk:0.1.15")
+    implementation("com.somaticai.somaloop:experimental:0.1.15") // 研究入口，可选
 }
 ```
 
