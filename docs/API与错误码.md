@@ -153,7 +153,7 @@ Swift 使用 `SDKError`；Kotlin 使用 `SDKException.code`，Java 回调使用 
 
 `setDeviceName` 接受 **1–12 个可打印 ASCII 字符，不能全为空格**。例如 `TBSoma`；中文、控制字符、空字符串和超长输入返回 `invalidArgument`，不自动截断、去掉字符或添加前缀。写入前重新读取并核对当前连接的 MAC；不一致返回 `protocolMismatch`，不发送改名命令。
 
-成功返回 `DeviceNameChangeReceipt(requestedName, responseRawHex)`，表示收到校验正确且与本次请求匹配的应答，`advertisementVerified` 始终为 `false`。SDK 不把期望名称写入 `DeviceProfile.advertisedName`，不自动断开、重扫或恢复出厂。调用方可在收到应答后主动 `disconnect()`、`scan()`，用实际扫描结果展示新名称，再连接核对同一设备。SDK 通过已知服务 UUID 或 `V5 ` 名称前缀标记扫描候选，不代表身份已确认。其他名称仍按原文返回，`unknown` 不阻止连接；不会按名称删除扫描结果。不要仅依靠旧名称前缀过滤设备，否则改名后可能找不到。
+成功返回 `DeviceNameChangeReceipt(requestedName, responseRawHex)`，表示收到校验正确且与本次请求匹配的应答，`advertisementVerified` 始终为 `false`。SDK 不把期望名称写入 `DeviceProfile.advertisedName`，不自动断开、重扫或恢复出厂。调用方可在收到应答后主动 `disconnect()`、`scan()`，用实际扫描结果展示新名称，再连接核对同一设备。0.1.15/build32 恢复了 `JCV8` 出厂广播前缀识别（包括 `JCV8B`），同时保留 `V5 ` 名称前缀和已知服务 UUID 识别；名称前缀匹配不区分大小写，不要求同时广播服务 UUID。0.1.14/build31 不含恢复逻辑，升级时使用 0.1.15/build32 对应二进制。候选不代表身份已确认。其他名称仍按原文返回，`unknown` 不阻止连接；不会按名称删除扫描结果。不要仅依靠旧名称前缀过滤设备，否则改名后可能找不到。
 
 固件 `00000808-260604` 的独立 Mac 探针实测：写入 `TBSoma` 后，广播为 `V5 TBSoma`，而读取接口仍返回旧名称字段。`V5 ` 是固件行为，SDK 不保证所有固件都添加这个前缀；前缀移除、恢复原厂名称、重启持久性未验证。该次独立探针结果不冒充本构建或手机验收。
 

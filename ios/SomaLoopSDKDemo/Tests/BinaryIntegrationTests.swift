@@ -24,6 +24,14 @@ final class BinaryIntegrationTests:XCTestCase {
         } catch { await client.shutdown();throw error }
     }
 
+    func testBinaryFactoryAdvertisingWithoutServiceUUID() {
+        let device = DiscoveredDevice(id: "factory", name: "JCV8B 8D1816", rssi: -48)
+        XCTAssertNil(device.advertisedServiceUUIDs)
+        XCTAssertEqual(device.discoveryKind, .candidate)
+        XCTAssertEqual(device.discoveryEvidence, ["advertisedName"])
+        XCTAssertEqual(device.name, "JCV8B 8D1816")
+    }
+
     func testBinaryTypedDataViewsAndHostConstructors() throws {
         let packet = try DecodedPacket(kind: .realtime, fields: ["temperatureRaw": .integer(365), "distanceRaw": .integer(125)])
         XCTAssertEqual(packet.kind, .realtime)

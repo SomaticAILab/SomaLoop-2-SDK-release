@@ -590,6 +590,14 @@ public final class BinaryIntegrationTest {
                 Collections.singletonMap("ppgOnly", entry), Collections.emptyMap());
     }
 
+    @Test public void binaryFactoryAdvertisingWithoutServiceUUID() {
+        DiscoveredDevice device = new DiscoveredDevice("factory", "JCV8B 8D1816", -48);
+        assertNull(device.getAdvertisedServiceUUIDs());
+        assertEquals(DiscoveryKind.candidate, PublicDataViewsKt.getDiscoveryKind(device));
+        assertEquals(Collections.singletonList("advertisedName"), PublicDataViewsKt.getDiscoveryEvidence(device));
+        assertEquals("JCV8B 8D1816", device.getName());
+    }
+
     @Test public void existingDiscoveryConstructorAndCopyStillCompile() {
         DiscoveredDevice device = new DiscoveredDevice("fake", "v5 Test", -40);
         assertNull(device.getAdvertisedServiceUUIDs());
