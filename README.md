@@ -2,7 +2,7 @@
 
 SomaLoop 2 SDK 提供可穿戴设备的 iOS / Android 原生接入，提供二进制库、Swift / Kotlin / Java 示例及接入文档。
 
-版本：**0.1.12 / build 28**。支持有效四字节 BCD 固件 **≥0.0.8.8（含）**，不设上限。公开模块为 `SomaLoopSDK`、`SomaLoopExperimental`，Android 包名为 `com.somaticai.somaloop`。
+版本：**0.1.14 / build 31**。支持有效四字节 BCD 固件 **≥0.0.8.8（含）**，不设上限。公开模块为 `SomaLoopSDK`、`SomaLoopExperimental`，Android 包名为 `com.somaticai.somaloop`。
 
 公开提供下载，按 [SDK 评估许可](LICENSE) 用于内部评估；商业使用或再分发需另行授权。
 
@@ -20,6 +20,7 @@ SomaLoop 2 SDK 提供可穿戴设备的 iOS / Android 原生接入，提供二�
 | 功能 | 用法 |
 | --- | --- |
 | 设备发现与连接 | 扫描、选择设备、连接后查询分项能力 |
+| 设备名称 | `readDeviceName` 读取设备字段，`setDeviceName` 改名；实际广播名需重新扫描确认 |
 | 设备信息与设置 | 读取信息、时钟和设置快照；闹钟返回完整列表 |
 | 历史读取 | 15 类历史（包含 alarms）及独立闹钟设置读取默认可调用，保存记录并检查完成／中断状态 |
 | 采集与测量 | PPG、联合 PPG + ACC、独立 ACC、限时原始 ECG、心率／血氧／HRV 主动测量 |

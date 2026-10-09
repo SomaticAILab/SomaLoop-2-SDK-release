@@ -12,6 +12,7 @@ import _StringProcessing
 import _SwiftConcurrencyShims
 public struct ACCFrame : Swift.Codable, Swift.Equatable, Swift.Sendable {
   public let sequence: Swift.Int, samples: [SomaLoopSDK.MEMSSample], unknownTail: Swift.String, rawHex: Swift.String
+  public init(sequence: Swift.Int, samples: [SomaLoopSDK.MEMSSample]) throws
   public init?(_ data: Foundation.Data)
   public static func == (a: SomaLoopSDK.ACCFrame, b: SomaLoopSDK.ACCFrame) -> Swift.Bool
   public func encode(to encoder: any Swift.Encoder) throws
@@ -19,6 +20,7 @@ public struct ACCFrame : Swift.Codable, Swift.Equatable, Swift.Sendable {
 }
 public struct ACCRecord : Swift.Codable, Swift.Sendable {
   public let frame: SomaLoopSDK.ACCFrame, receive: SomaLoopSDK.JournalRecord
+  public init(frame: SomaLoopSDK.ACCFrame, receive: SomaLoopSDK.JournalRecord)
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
 }
@@ -44,6 +46,7 @@ extension SomaLoopSDK.ClockSnapshot {
 }
 public struct ECGFrame : Swift.Codable, Swift.Equatable, Swift.Sendable {
   public let sequence: Swift.Int, values: [Swift.Int64], unknownTail: Swift.String, rawHex: Swift.String
+  public init(sequence: Swift.Int, values: [Swift.Int64]) throws
   public init?(packet: SomaLoopSDK.DecodedPacket)
   public static func == (a: SomaLoopSDK.ECGFrame, b: SomaLoopSDK.ECGFrame) -> Swift.Bool
   public func encode(to encoder: any Swift.Encoder) throws
@@ -273,6 +276,25 @@ public struct PacketDiagnostic : Swift.Codable, Swift.Sendable {
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
 }
+public struct DeviceNameReading : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let name: Swift.String?
+  public let rawHex: Swift.String
+  public init(name: Swift.String?, rawHex: Swift.String)
+  public static func == (a: SomaLoopSDK.DeviceNameReading, b: SomaLoopSDK.DeviceNameReading) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct DeviceNameChangeReceipt : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let requestedName: Swift.String
+  public let responseRawHex: Swift.String
+  public var advertisementVerified: Swift.Bool {
+    get
+  }
+  public init(requestedName: Swift.String, responseRawHex: Swift.String)
+  public static func == (a: SomaLoopSDK.DeviceNameChangeReceipt, b: SomaLoopSDK.DeviceNameChangeReceipt) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
 public enum HapticStep : Swift.String, Swift.Codable, Swift.Sendable {
   case short, long, rest
   public init?(rawValue: Swift.String)
@@ -496,7 +518,8 @@ public struct DiscoveredDevice : Swift.Codable, Swift.Equatable, Swift.Sendable 
   public let id: Swift.String
   public let name: Swift.String?
   public let rssi: Swift.Int
-  public init(id: Swift.String, name: Swift.String?, rssi: Swift.Int)
+  public let advertisedServiceUUIDs: [Swift.String]?
+  public init(id: Swift.String, name: Swift.String?, rssi: Swift.Int, advertisedServiceUUIDs: [Swift.String]? = nil)
   public static func == (a: SomaLoopSDK.DiscoveredDevice, b: SomaLoopSDK.DiscoveredDevice) -> Swift.Bool
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
@@ -636,6 +659,7 @@ public enum SDKEvent : Swift.Sendable {
   case skinContact(SomaLoopSDK.WearState)
   case battery(SomaLoopSDK.BatteryReading, observedAt: Swift.Double)
   case acc(SomaLoopSDK.ACCFrame)
+  case accRecord(SomaLoopSDK.ACCRecord), ppg(SomaLoopSDK.PPGRecord)
   case haptics(SomaLoopSDK.HapticReport)
   case discovery(SomaLoopSDK.DiscoveredDevice), connection(SomaLoopSDK.ConnectionState), device(SomaLoopSDK.DeviceProfile), raw(SomaLoopSDK.JournalRecord)
   case packetDiagnostic(SomaLoopSDK.PacketDiagnostic)
@@ -759,6 +783,7 @@ public struct ReceiveBoundary : Swift.Codable, Swift.Equatable, Swift.Sendable {
 }
 public struct MEMSSample : Swift.Codable, Swift.Equatable, Swift.Sendable {
   public var x: Swift.Int16, y: Swift.Int16, z: Swift.Int16
+  public init(x: Swift.Int16, y: Swift.Int16, z: Swift.Int16)
   public static func == (a: SomaLoopSDK.MEMSSample, b: SomaLoopSDK.MEMSSample) -> Swift.Bool
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
@@ -811,6 +836,7 @@ public struct PairedDebugParser {
 }
 public struct PPGFrame : Swift.Codable, Swift.Equatable, Swift.Sendable {
   public let sequence: Swift.Int, bytesPerSample: Swift.Int, values: [Swift.UInt32]
+  public init(sequence: Swift.Int, bytesPerSample: Swift.Int = 4, values: [Swift.UInt32]) throws
   public init?(_ data: Foundation.Data)
   public static func == (a: SomaLoopSDK.PPGFrame, b: SomaLoopSDK.PPGFrame) -> Swift.Bool
   public func encode(to encoder: any Swift.Encoder) throws
@@ -819,6 +845,77 @@ public struct PPGFrame : Swift.Codable, Swift.Equatable, Swift.Sendable {
 public enum SomaLoopPacketDecoder {
   public static func decode(_ bytes: Foundation.Data) throws -> SomaLoopSDK.DecodedPacket
   public static func splitHistory(_ bytes: Foundation.Data, kind: SomaLoopSDK.HistoryKind) throws -> (records: [SomaLoopSDK.DecodedPacket], ended: Swift.Bool)
+}
+public enum PacketKind : Swift.String, Swift.Codable, Swift.Sendable {
+  case history, realtime, ppg, acc, ecg, control, debug, unknown
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public enum DiscoveryKind : Swift.String, Swift.Codable, Swift.Sendable {
+  case candidate, unknown
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+extension SomaLoopSDK.DiscoveredDevice {
+  public var discoveryKind: SomaLoopSDK.DiscoveryKind {
+    get
+  }
+  public var discoveryEvidence: [Swift.String] {
+    get
+  }
+}
+public struct NumericReading : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let rawValue: Swift.Double?, value: Swift.Double?, unit: Swift.String?, quality: Swift.String
+  public static func == (a: SomaLoopSDK.NumericReading, b: SomaLoopSDK.NumericReading) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct PacketMeasurements : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let skinTemperature: SomaLoopSDK.NumericReading?, distance: SomaLoopSDK.NumericReading?, calories: SomaLoopSDK.NumericReading?, steps: SomaLoopSDK.NumericReading?
+  public static func == (a: SomaLoopSDK.PacketMeasurements, b: SomaLoopSDK.PacketMeasurements) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct DecodedText : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let text: Swift.String?, quality: Swift.String
+  public static func == (a: SomaLoopSDK.DecodedText, b: SomaLoopSDK.DecodedText) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+extension SomaLoopSDK.DecodedPacket {
+  public var kind: SomaLoopSDK.PacketKind {
+    get
+  }
+  public var historyKind: SomaLoopSDK.HistoryKind? {
+    get
+  }
+  public var measurements: SomaLoopSDK.PacketMeasurements {
+    get
+  }
+  public var alarmLabel: SomaLoopSDK.DecodedText? {
+    get
+  }
+  public init(kind: SomaLoopSDK.PacketKind, historyKind: SomaLoopSDK.HistoryKind? = nil, fields: [Swift.String : SomaLoopSDK.ProtocolValue] = [:]) throws
+}
+extension SomaLoopSDK.HistoryRecord {
+  public var measurements: SomaLoopSDK.PacketMeasurements {
+    get
+  }
+  public var alarmLabel: SomaLoopSDK.DecodedText? {
+    get
+  }
+}
+public struct PPGRecord : Swift.Codable, Swift.Sendable {
+  public let frame: SomaLoopSDK.PPGFrame, receive: SomaLoopSDK.JournalRecord
+  public init(frame: SomaLoopSDK.PPGFrame, receive: SomaLoopSDK.JournalRecord)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
 }
 public struct ReplayExchange : Swift.Codable, Swift.Equatable, Swift.Sendable {
   public let commandHex: Swift.String, notificationHex: [Swift.String], disconnectAfter: Swift.Bool
@@ -1025,6 +1122,8 @@ public enum SomaContractAdapter {
   public func readBattery() async throws -> SomaLoopSDK.BatteryReading
   public func readDeviceInfo() async throws -> [SomaLoopSDK.DecodedPacket]
   public func readDeviceInfoPartial() async throws -> SomaLoopSDK.DeviceInfoResult
+  public func readDeviceName() async throws -> SomaLoopSDK.DeviceNameReading
+  public func setDeviceName(_ name: Swift.String) async throws -> SomaLoopSDK.DeviceNameChangeReceipt
   public func capabilities() -> [Swift.String : SomaLoopSDK.CapabilityState]
   public func capabilitySnapshot() -> SomaLoopSDK.CapabilitySnapshot
   public func exportDiagnostics(to directory: Foundation.URL) throws -> Foundation.URL
@@ -1119,6 +1218,12 @@ extension SomaLoopSDK.SettingKind : Swift.RawRepresentable {}
 extension SomaLoopSDK.PPIHRVUnavailableReason : Swift.Equatable {}
 extension SomaLoopSDK.PPIHRVUnavailableReason : Swift.Hashable {}
 extension SomaLoopSDK.PPIHRVUnavailableReason : Swift.RawRepresentable {}
+extension SomaLoopSDK.PacketKind : Swift.Equatable {}
+extension SomaLoopSDK.PacketKind : Swift.Hashable {}
+extension SomaLoopSDK.PacketKind : Swift.RawRepresentable {}
+extension SomaLoopSDK.DiscoveryKind : Swift.Equatable {}
+extension SomaLoopSDK.DiscoveryKind : Swift.Hashable {}
+extension SomaLoopSDK.DiscoveryKind : Swift.RawRepresentable {}
 extension SomaLoopSDK.ReplayBLETransport : Swift.Sendable {}
 extension SomaLoopSDK.WearStatus : Swift.Equatable {}
 extension SomaLoopSDK.WearStatus : Swift.Hashable {}

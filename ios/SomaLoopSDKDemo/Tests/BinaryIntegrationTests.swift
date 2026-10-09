@@ -1,6 +1,56 @@
 import XCTest
 import SomaLoopSDK
 final class BinaryIntegrationTests:XCTestCase {
+    func testDeviceNameBinaryReadAndWrite() async throws {
+        let device=DiscoveredDevice(id:"synthetic-name",name:"Original",rssi:-40)
+        let mac=try ReplayExchange(commandHex:"22000000000000000000000000000022",notificationHex:["22010203040506000000000000000037"])
+        let read=try ReplayExchange(commandHex:"3e00000000000000000000000000003e",notificationHex:["3e4f524947494e414c000000000000000000000000000093"])
+        let exchanges=try [mac,
+            ReplayExchange(commandHex:"27000000000000000000000000000027",notificationHex:["27000008082606040000000000000067"]),
+            ReplayExchange(commandHex:"41000000000000000000000000000041",notificationHex:["41260929123045000000000000000020"]),
+            read,mac,
+            ReplayExchange(commandHex:"3d5442536f6d61000000000000000063",notificationHex:["3d5442536f6d6100000000000000006300000000000000c6"]),read]
+        let replay=try ReplayBLETransport(device:device,exchanges:exchanges)
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let client=SomaLoopClient(replay:replay,storageRoot:root)
+        defer{try? FileManager.default.removeItem(at:root)}
+        do {
+            try await client.connect(device)
+            let before=try await client.readDeviceName(),receipt=try await client.setDeviceName("TBSoma"),after=try await client.readDeviceName()
+            XCTAssertEqual(before.name,"ORIGINAL");XCTAssertEqual(after,before)
+            XCTAssertEqual(receipt.requestedName,"TBSoma");XCTAssertFalse(receipt.advertisementVerified)
+            XCTAssertEqual(DeviceNameReading(name:nil,rawHex:"ff").rawHex,"ff")
+            await client.shutdown()
+        } catch { await client.shutdown();throw error }
+    }
+
+    func testBinaryTypedDataViewsAndHostConstructors() throws {
+        let packet = try DecodedPacket(kind: .realtime, fields: ["temperatureRaw": .integer(365), "distanceRaw": .integer(125)])
+        XCTAssertEqual(packet.kind, .realtime)
+        XCTAssertEqual(packet.measurements.skinTemperature?.value ?? 0, 36.5, accuracy: 1e-10)
+        XCTAssertEqual(packet.measurements.distance?.value, 1.25)
+        XCTAssertEqual(packet.measurements.distance?.unit, "km")
+        let history = try DecodedPacket(kind: .history, historyKind: .temperature)
+        XCTAssertEqual(history.historyKind, .temperature)
+        XCTAssertThrowsError(try HistoryRecord(packet: history))
+        let device = DiscoveredDevice(id: "test", name: nil, rssi: -50, advertisedServiceUUIDs: ["FFF0"])
+        XCTAssertEqual(device.discoveryKind, .candidate)
+        XCTAssertEqual(device.discoveryEvidence, ["advertisedService"])
+        let received = JournalRecord(kind: "test", time: Date(timeIntervalSince1970: 1_700_000_000.125), uptime: 10)
+        let ppg = try PPGFrame(sequence: 42, values: Array(repeating: 1, count: 25))
+        let acc = try ACCFrame(sequence: 42, samples: Array(repeating: MEMSSample(x: -1, y: 0, z: 1), count: 6))
+        let ecg = try ECGFrame(sequence: 42, values: Array(repeating: 1, count: 59))
+        let events: [SDKEvent] = [.ppg(PPGRecord(frame: ppg, receive: received)), .accRecord(ACCRecord(frame: acc, receive: received)), .acc(acc)]
+        XCTAssertEqual(events.count, 3)
+        XCTAssertEqual(ecg.rawHex, "")
+        XCTAssertNil(ECGReceptionSummary(frames: [ecg]).sampleRateHz)
+        let sport = try DecodedPacket(kind: .history, historyKind: .sport, fields: ["distance": .text("0000c03f")])
+        XCTAssertEqual(sport.measurements.distance?.value, 1.5)
+        XCTAssertNil(sport.measurements.distance?.unit)
+        let alarm = try DecodedPacket(kind: .history, historyKind: .alarms, fields: ["textBytes": .text("4142")])
+        XCTAssertEqual(alarm.alarmLabel?.text, "AB")
+    }
+
     func testStopResultClockAndFixedDateBinarySurface()async throws {
         XCTAssertEqual(SomaLoop.version,Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String)
         let result=try JSONDecoder().decode(CaptureStopResult.self,from:Data(#"{"sessionID":"test","outcome":"quiescent","attempts":1,"reason":"acc_quiet_3_seconds","observedAt":1700000000}"#.utf8))

@@ -9,6 +9,7 @@ import SomaLoopExperimental
     @Published var batteryText="电量未知"
     @Published var contactText="接触状态未知"
     @Published var accSamples=0
+    @Published var ppgSamples=0
     @Published var busy=false
     @Published var runtime=DemoRuntimeState()
     @Published var exportURL:URL?
@@ -32,7 +33,8 @@ import SomaLoopExperimental
             if deviceState.connection == .ready {profile=p;deviceState.receive(await client.capabilitySnapshot())}
         case .battery(let value,let at):batteryText="电量：\(value.percentage.value.map{String($0)+"%"} ?? "未知") · \(value.percentage.quality) · 接收 \(at)"
         case .skinContact(let value):contactText="接触：\(value.state.rawValue) · \(value.source)"
-        case .acc(let frame):accSamples+=frame.samples.count
+        case .accRecord(let record):accSamples+=record.frame.samples.count
+        case .ppg(let record):ppgSamples+=record.frame.values.count
         case .captureHealth(let value):health=value
         case .capture(let s):manifest=s
         case .haptics(let r):haptics=r
@@ -86,7 +88,7 @@ struct DemoView:View {
             Button("开始 PPG + ACC · 24 小时",action:{model.start(.paired)}).demoAvailability(model.disabledReason(.capture("ppgAccPaired")))
             Button("开始独立 ACC · 24 小时",action:{model.start(.accOnly)}).demoAvailability(model.disabledReason(.capture("rawACC")))
             Button("独立 ACC · 60 秒",action:{model.start(.accOnly,durationSeconds:60)}).demoAvailability(model.disabledReason(.capture("rawACC")))
-            Text("ACC 事件样本：\(model.accSamples)").font(.caption)
+            Text("ACC 事件样本：\(model.accSamples) · 独立 PPG：\(model.ppgSamples)").font(.caption)
             if let health=model.health{Text("\(health.state.rawValue) · \(health.reason)").font(.caption)}
             Button("停止采集",role:.destructive,action:model.stop).demoAvailability(model.disabledReason(.stopCapture))
             if let pending=model.manifest,!pending.requested,pending.cleanupPending {

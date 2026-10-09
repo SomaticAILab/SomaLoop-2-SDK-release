@@ -2,6 +2,8 @@
 
 Swift 使用 actor 和 `async/await`；Kotlin 主要使用 `suspend` 与 `Flow`；Java 使用 `SomaLoopJava.Callback<T>` 和事件订阅。
 
+本文的“宿主”指接入 SDK 的 App。`compatibleCandidate` 表示调用路径开放，具体设备的数据、后台运行和长时间采集仍需分别验证；`unknown` 表示信息不足，不等于零或关闭。
+
 ## 入口
 
 | 任务 | Swift | Kotlin / Java |
@@ -33,6 +35,18 @@ Swift 使用 actor 和 `async/await`；Kotlin 主要使用 `suspend` 与 `Flow`�
 `readDeviceInfoPartial()` 返回成功的 `packets` 和按查询项记录的 `errors`。`readDeviceInfo()` 只有全部查询均无成功结果时才抛错。
 
 `DeviceInfoResult.batteryReading`、`DecodedPacket.measurementValues` 和 `ECGRecording.receptionSummary` 提供类型化值及接收统计；Swift 另有 `ECGRecording.frames`，Java 对应 `ApiViews` 静态方法。字段与单位见[数据语义](数据与时间语义.md)。
+
+从 0.1.13/build29 开始，新增 `DecodedPacket.kind` / `historyKind`、`measurements`、`alarmLabel` 与扫描候选视图。它们由 SDK 解释包分类、单位和文本，App 无需解析命令字、布局名或原始字节。当前为本地开发候选，正式分发与验证范围以对应发布报告为准。
+
+| 类型化视图 | 用法 |
+| --- | --- |
+| `DiscoveredDevice.discoveryKind` / `discoveryEvidence` | `candidate` 或 `unknown`，依据为广播名称或服务；连接后再核对能力 |
+| `DecodedPacket.kind` | `history/realtime/ppg/acc/ecg/control/debug/unknown`；历史读取的控制回复仍为 `control` |
+| `DecodedPacket.historyKind` | 仅历史记录有值，用于选择具体 `HistoryKind` |
+| packet / history record 的 `measurements` | 皮温、距离、热量和步数；保留原值、可空数值、单位与质量 |
+| packet / history record 的 `alarmLabel` | 严格 UTF-8 解码的文字及 `decoded/invalidUTF8` 状态 |
+
+Java 通过 `PublicDataViewsKt.getKind(packet)`、`getHistoryKind(packet)`、`getDiscoveryKind(device)`、`getDiscoveryEvidence(device)`、`getMeasurements` 和 `getAlarmLabel` 访问这些视图。后两个方法均支持 `DecodedPacket` / `HistoryRecord`；Kotlin 使用同名扩展属性。
 
 ## 固件与能力
 
@@ -92,22 +106,31 @@ Swift 使用 `SDKError`；Kotlin 使用 `SDKException.code`，Java 回调使用 
 
 `startCapture(accOnly)` 使用持久会话，只开启 ACC；默认一天、最多七天，支持同身份恢复及导出。`ACCFrame` 含六组有符号 XYZ 原始计数，不提供已校准单位或样本时间。
 
-`readBattery` 是空闲时的单条读取；`chargingStateRaw` 和 `voltage.rawValue` 分别保留 SDK 解码的原始充电码和无符号电压值。充电状态、缩放及单位未经确认，枚举为unknown，物理值和单位为null。采集中仍busy，只有收到实际电量通知时才发电量事件，不保证固件主动推送。
+`readBattery` 是空闲时的单条读取；`chargingStateRaw` 和 `voltage.rawValue` 分别保留 SDK 解码的原始充电码和无符号电压值。充电状态、缩放及单位未经确认，枚举为 `unknown`，物理值和单位为 `null`。采集中仍返回 `busy`，只有收到实际电量通知时才发电量事件，不保证固件主动推送。
 
-`readWearState` 在00000808-260604上短暂打开PPG/调试，观察时长须为 1–10 秒，默认 5 秒（另计写入和关闭超时），返回固件接触状态，不留采集目录；忙时busy、无信号unknown、关闭失败stopUnconfirmed并断连。采集中的skinContact事件独立解析完整TOUCH/touch_flag行；未确认语义的设备佩戴事件保留unknown，touch_value阈值未知。未接触时宿主应提示调整佩戴或停止PPG，避免无数据重启循环。旧二进制尚无这些新增接口，升级需重编译并补齐新枚举分支。
+| `readWearState` 条件 | 行为 |
+| --- | --- |
+| 固件 | 仅 `00000808-260604`（0.0.8.8，固件日期 2026-06-04） |
+| 观察时长 | 1–10 秒，默认 5 秒；另计写入和关闭超时 |
+| 检查方式 | 短暂打开 PPG / 调试，返回固件接触状态，不留采集目录 |
+| 已有操作 / 无信号 / 关闭失败 | 分别为 `busy` / `unknown` / `stopUnconfirmed` 并断连 |
+
+采集中的 `skinContact` 事件解释完整的固件接触报告；被动接触状态事件保留原码和 `state=unknown`，App 不按非零值推断已佩戴，`touchValue` 阈值也未确认。未接触时提示调整佩戴或停止 PPG。升级需重新编译并补齐新枚举分支。
 
 ## SDKEvent 总表
 
 | Swift case | Kotlin / Java 类型 | 处理 |
 | --- | --- | --- |
-| discovery | Discovery | 按设备 id 更新扫描列表 |
+| discovery | Discovery | 按设备 id 更新扫描列表；候选分类不代替连接后的能力核对 |
 | connection | Connection | 更新连接状态，不把连接成功当作已有测量数据 |
 | device | Device | 保存当前识别信息和能力 |
 | raw | Raw | 原始收发日志，接收时间见 JournalRecord |
 | packetDiagnostic | Diagnostic | 保留未知/异常包形状 |
 | packet | Packet | 已解码包，不重复计入类型化结果 |
 | paired | Paired | 完整联合帧 |
-| acc | ACC | 六组三轴原始计数 |
+| ppg | PPG | `PPGRecord(frame, receive)`；接收记录含宿主时间及原始日志定位 |
+| accRecord | ACCRecord | `ACCRecord(frame, receive)`；独立 ACC 的推荐保存/上传入口 |
+| acc | ACC | 兼容的 `ACCFrame` 事件；与 accRecord 来自同一通知，不重复上传 |
 | skinContact | SkinContact | 固件接触状态，可为 unknown |
 | battery | Battery | 类型化电量和接收 Unix 秒 |
 | capture | Capture | 会话状态及 stopResult |
@@ -119,3 +142,19 @@ Swift 使用 `SDKError`；Kotlin 使用 `SDKException.code`，Java 回调使用 
 | error | Failure | 按错误码处理；不能仅因收到错误丢弃已收数据 |
 
 事件不是每个请求的唯一返回通道。停止结果应检查方法结果或 capture 会话；异步事件接收任务应先于扫描/读取启动。Swift 升级时补齐 switch 分支，Kotlin/Java 同样保留未知扩展处理。
+
+`ppg` 和 `accRecord` 为 0.1.13/build29 新增事件。其 `receive` 使用实际接收并落盘的 `JournalRecord`，不会在分发事件时重新生成时间；与同通知的 `raw` 事件共享文件和行定位。用类型化事件保存测量，`raw` 留作诊断；详细去重约定和测试构造器见[数据与时间语义](数据与时间语义.md#实时帧与接收记录)。
+
+## 设备名称读取与改名
+
+0.1.14/build31 新增 `readDeviceName()` 与 `setDeviceName(name)`，均要求设备已连接、通过正常固件准入且客户端空闲；采集、历史同步和其他独占操作中返回 `busy`。能力键为 `deviceNameRead`、`deviceNameWrite`，在支持固件范围内为兼容候选，无实验开关或设备地址白名单；`settingsWrite` 不因此开放其他设置。
+
+`readDeviceName()` 返回 `DeviceNameReading`：`name` 是设备名称字段中首个 NUL 之前的可打印 ASCII 文本，空字符串保留；编码无法解释时为 `nil/null`，完整通知保存在 `rawHex`。这个字段**不保证等于当前广播名**，也不能当作改名后的校验值。扫描结果的 `DiscoveredDevice.name` 才是扫描时取得的名称，也可能受系统缓存影响；设备身份继续用连接后读回的 MAC 核对。
+
+`setDeviceName` 接受 **1–12 个可打印 ASCII 字符，不能全为空格**。例如 `TBSoma`；中文、控制字符、空字符串和超长输入返回 `invalidArgument`，不自动截断、去掉字符或添加前缀。写入前重新读取并核对当前连接的 MAC；不一致返回 `protocolMismatch`，不发送改名命令。
+
+成功返回 `DeviceNameChangeReceipt(requestedName, responseRawHex)`，表示收到校验正确且与本次请求匹配的应答，`advertisementVerified` 始终为 `false`。SDK 不把期望名称写入 `DeviceProfile.advertisedName`，不自动断开、重扫或恢复出厂。调用方可在收到应答后主动 `disconnect()`、`scan()`，用实际扫描结果展示新名称，再连接核对同一设备。SDK 通过已知服务 UUID 或 `V5 ` 名称前缀标记扫描候选，不代表身份已确认。其他名称仍按原文返回，`unknown` 不阻止连接；不会按名称删除扫描结果。不要仅依靠旧名称前缀过滤设备，否则改名后可能找不到。
+
+固件 `00000808-260604` 的独立 Mac 探针实测：写入 `TBSoma` 后，广播为 `V5 TBSoma`，而读取接口仍返回旧名称字段。`V5 ` 是固件行为，SDK 不保证所有固件都添加这个前缀；前缀移除、恢复原厂名称、重启持久性未验证。该次独立探针结果不冒充本构建或手机验收。
+
+**超时、取消、连接中断或写入错误不等于设备未改名。** 单次调用不会自动重发；在决定重试前重新扫描并核对实际状态。固件可能在名称改变后主动断连；没有匹配应答时接口仍报告实际错误，不能宣称改名失败或广播验证成功。

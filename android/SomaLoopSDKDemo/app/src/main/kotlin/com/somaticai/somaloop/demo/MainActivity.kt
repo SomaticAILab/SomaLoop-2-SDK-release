@@ -203,11 +203,12 @@ class MainActivity:Activity(){
             if(state==ConnectionState.ready)refreshCapabilities(connected,binding)
         }}}
         launch{observeSafely(binding){connected.events().collect{event->if(!capabilityState.isCurrent(binding))return@collect;when(event){
-        is SDKEvent.Discovery->{val d=event.device;if(d.id !in seen){val button=Button(this@MainActivity).apply{text="设备 ${d.id.filter{it.isLetterOrDigit()}.takeLast(6).uppercase(java.util.Locale.ROOT)} · ${d.rssi} dBm";setOnClickListener{this@MainActivity.run{sdk().stopScan();sdk().connect(d)}}};seen[d.id]=button;devices.addView(button)}}
+        is SDKEvent.Discovery->{val d=event.device;if(d.id !in seen){val button=Button(this@MainActivity).apply{text="设备 ${d.id.filter{it.isLetterOrDigit()}.takeLast(6).uppercase(java.util.Locale.ROOT)} · ${d.rssi} dBm · ${d.discoveryKind}";setOnClickListener{this@MainActivity.run{sdk().stopScan();sdk().connect(d)}}};seen[d.id]=button;devices.addView(button)}}
         is SDKEvent.Device->{historyCheckpoint=null;status.text="固件 ${event.profile.firmwareVersion?.dotted?:"未知"} / ${event.profile.firmwareDate?:"日期未知"} · ${event.profile.state}";refreshCapabilities(connected,binding)}
         is SDKEvent.Battery->status.text="电量 ${event.reading.percentage.value?.let{"$it%"}?:"未知"} · ${event.reading.percentage.quality} · 接收 ${event.observedAt}"
         is SDKEvent.SkinContact->status.text="接触 ${event.reading.state} · ${event.reading.source}"
-        is SDKEvent.ACC->stats.text="收到 ACC：${event.frame.samples.size} 组三轴 · 序号 ${event.frame.sequence}"
+        is SDKEvent.ACCRecord->stats.text="收到 ACC：${event.record.frame.samples.size} 组三轴 · 序号 ${event.record.frame.sequence} · 接收 ${event.record.receive.time}"
+        is SDKEvent.PPG->stats.text="收到 PPG：${event.record.frame.values.size} 点 · 序号 ${event.record.frame.sequence} · 接收 ${event.record.receive.time}"
         is SDKEvent.Health->status.text="采集状态：${event.health.state} / ${event.health.reason}"
         is SDKEvent.Capture->{capabilityState.updateSession(binding,event.session.requested,event.session.cleanupPending);renderAvailability()}
         is SDKEvent.Haptics->{capabilityState.updateHaptics(binding,event.report.pendingStop);renderAvailability();status.text="振动 ${event.report.status} / ${event.report.error?:"无软件错误"} / 待确认停止 ${event.report.pendingStop}"}
