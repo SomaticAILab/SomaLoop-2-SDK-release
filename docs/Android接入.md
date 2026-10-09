@@ -1,6 +1,6 @@
 # Android / Java 接入
 
-SomaLoop 2 SDK 0.1.12 / build 28 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
+SomaLoop 2 SDK 0.1.14 / build 31 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
 
 ## 安装与构建
 
@@ -18,8 +18,8 @@ dependencyResolutionManagement {
 
 // app/build.gradle.kts
 dependencies {
-    implementation("com.somaticai.somaloop:sdk:0.1.12")
-    implementation("com.somaticai.somaloop:experimental:0.1.12") // 研究入口，可选
+    implementation("com.somaticai.somaloop:sdk:0.1.14")
+    implementation("com.somaticai.somaloop:experimental:0.1.14") // 研究入口，可选
 }
 ```
 
@@ -66,6 +66,8 @@ suspend fun connectSelected(client: SomaLoopClient, device: DiscoveredDevice) {
 
 事件处理应迅速完成，重计算移到其他工作队列。扫描列表按设备 `id` 更新，不能只靠广播名启用功能。示例片段中的调用异常还需纳入宿主统一错误处理。
 
+0.1.13/build29 新增 `device.discoveryKind` / `discoveryEvidence` 扩展属性：`candidate` 表示广播信息匹配，`unknown` 表示暂无依据；连接后再核对实际能力，不按候选标记直接启用功能。Java 对应 `PublicDataViewsKt.getDiscoveryKind(device)` / `getDiscoveryEvidence(device)`。本版本目前为本地开发候选，旧发布包不包含这些新增接口。
+
 连接就绪并取得权限后，可从可见 Activity 调用 `SomaLoopCaptureService.startCapture(activity, CaptureMode.paired, 60.0)`；停止入口调用 `client.stopCapture()`。Activity 销毁只解除绑定，不在旋转屏幕时关闭服务持有的采集客户端。服务重建可能恢复本地未结束会话；用户强制停止应用后不承诺自动恢复。
 
 自建服务可用 `SomaLoopClient(context, storageRoot)`，但须承担相同权限、通知和生命周期责任。用 `setHostBackground(true/false)` 上报实际前后台，整个服务结束使用时才 `shutdown()`。
@@ -90,6 +92,8 @@ suspend fun readSport(client: SomaLoopClient): HistoryBatch =
 ```
 
 SDK 支持有效四字节 BCD 固件版本 ≥0.0.8.8，全部 15 类历史（包含 alarms）及独立闹钟设置读取为 C，默认直接读取。闹钟用 `readSettings(SettingKind.alarms)`；不完整时抛错，需要保留部分记录时使用历史批次。各接口的固件范围和读取选项见 [API 与错误码](API与错误码.md)。
+
+`null`、零和字段缺失分别保存；不要把无效心率的空值改成 0，也不要把有效的零步数丢弃。再次读取及事务保存见[增量同步](数据与时间语义.md#增量同步与-clockepoch)，字段处理见[数值与缺失](数据与时间语义.md#数值单位与缺失)。
 
 ## Java
 
@@ -157,6 +161,8 @@ val exported = client.exportSession(java.io.File(context.cacheDir, "Exports"))
 
 Java 对应入口为 `SomaLoopJava.readBattery(callback)`、`readWearState(5.0, callback)`，回调类型分别为 `BatteryReading` 和 `WearState`。独立 ACC 支持持久会话、导出及同身份恢复，Demo 提供相应启动按钮和计数。主动接触检查会短暂启动 PPG；观察时长不含写入与关闭确认时间。采集中上述两个读取入口仍返回 `busy`，未知充电码、电压单位及佩戴事件不会猜测。升级须重新编译应用并补齐新增枚举分支。
 
+0.1.13/build29 的 `SDKEvent.PPG` / `SDKEvent.ACCRecord` 通过 `record.frame` 和 `record.receive` 返回帧与同一条落盘接收记录；Java 用 `getRecord()`。旧 `SDKEvent.ACC` 同时保留，只选择一个 ACC 事件保存或上传，避免重复。字段、去重和 `SDKTestValues` 应用测试示例见[实时帧与接收记录](数据与时间语义.md#实时帧与接收记录)。
+
 ## PPI RMSSD（0.1.11 正式算法）
 
 Kotlin / Java 使用 `PPIHRV.fromBatch(ppiBatch)` 从一次完整的 PPI 历史读取返回数值或 null／原因。有效 `rmssdMilliseconds` 可映射到 `hrv_rmssd`；缺失时跳过评分和提醒更新。默认策略、分组边界与质量存储见[数据与时间语义](数据与时间语义.md)。使用本版本完整二进制包，并重新编译应用。
@@ -164,3 +170,18 @@ Kotlin / Java 使用 `PPIHRV.fromBatch(ppiBatch)` 从一次完整的 PPI 历史�
 `readWearState` 仅支持 `00000808-260604`，观察时长 1–10 秒；`rawACC` 持久采集仅在该固件为默认可用，其他固件的实验能力状态不等于 `startCapture` 已放行。`durationSeconds` 必须有限、>0 且 ≤604800，省略为 86400。
 
 `stopCaptureWithResult` 的 `acknowledged`、`quiescent` 均释放本地会话；`unconfirmed` 保留待清理，最多两次停止尝试。只在 `acknowledged` 时 `stopConfirmed=true`。需要人工结束本地待处理时，按[采集与马达节拍](采集与马达节拍.md)调用 `abandonPendingCapture`；不要删除会话目录。
+
+## 读取与修改设备名称
+
+```kotlin
+val reading = client.readDeviceName()
+println(reading.name ?: "编码未确认") // 设备字段；不保证是广播名
+val receipt = client.setDeviceName("TBSoma")
+println(receipt.advertisementVerified) // false：尚未重扫验证
+client.disconnect()
+client.scan() // 从 Discovery 事件取得实际名称，再连接核对身份
+```
+
+Java 使用 `SomaLoopJava.readDeviceName(Callback<DeviceNameReading>)` 和 `setDeviceName("TBSoma", Callback<DeviceNameChangeReceipt>)`；通过 `getName()`、`getRequestedName()`、`getResponseRawHex()`、`getAdvertisementVerified()` 读取结果。
+
+名称限定为 1–12 个可打印 ASCII 字符（不能全为空格）。固件可能自动添加 `V5 `；`readDeviceName` 可能继续读到旧字段。发生超时或断连后先重扫，不自动重发。字段和应答语义见[API 与错误码](API与错误码.md#设备名称读取与改名)。

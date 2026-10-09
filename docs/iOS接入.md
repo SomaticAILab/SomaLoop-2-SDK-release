@@ -1,6 +1,6 @@
 # iOS 接入
 
-SomaLoop 2 SDK 0.1.12 / build 28 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
+SomaLoop 2 SDK 0.1.14 / build 31 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
 
 ## 安装
 
@@ -31,7 +31,7 @@ let observation = Task {
         for try await event in events {
             switch event {
             case .discovery(let device):
-                print(device.id, device.name ?? "未命名设备")
+                print(device.id, device.name ?? "未命名设备", device.discoveryKind)
             case .error(let code, let detail):
                 print(code, detail)
             default: break
@@ -45,6 +45,8 @@ try await client.scan()
 ```
 
 扫描没有“所有设备已返回”的完成通知。列表按 `DiscoveredDevice.id` 更新，名称不能用作数据库身份键或功能准入依据。设备选择完成后调用：
+
+`discoveryKind` / `discoveryEvidence` 是 0.1.13/build29 新增的候选提示。`candidate` 表示广播信息匹配，`unknown` 表示尚无识别依据；两者都应在连接后检查分项能力。此版本目前为本地开发候选，已发布的旧包需等待对应新二进制后再使用这些新增接口。
 
 ```swift
 func connectSelected(_ device: DiscoveredDevice, client: SomaLoopClient) async throws {
@@ -76,6 +78,8 @@ func readSport(client: SomaLoopClient) async throws -> HistoryBatch {
 ```
 
 `complete` 与 `interruption == nil` 必须同时检查。需要续页时，仅在原连接、同类未结束读取中使用 `continuation: true`；跨连接恢复使用带 checkpoint 的 `synchronizeHistory`。详细字段和时间规则见[数据语义](数据与时间语义.md)。
+
+`nil`、零和字段缺失分别保存；不要把无效心率的空值改成 0，也不要把有效的零步数丢弃。保存方式见[数值与缺失](数据与时间语义.md#数值单位与缺失)，再次读取及事务保存见[增量同步示例](数据与时间语义.md#增量同步与-clockepoch)。
 
 SDK 支持有效四字节 BCD 固件版本 ≥0.0.8.8，全部 15 类历史（包含 alarms）及独立闹钟设置读取为 C，默认直接读取。闹钟入口为 `readSettings(.alarms)`，只有完整列表才返回；需要保留部分结果时使用历史批次入口。各接口的固件范围和读取选项见 [API 与错误码](API与错误码.md)。
 
@@ -127,6 +131,8 @@ print(export)
 
 独立 ACC 会话支持保存、导出及同身份恢复，最多七天；Demo 提供独立 ACC 按钮和包数/样本数。`readWearState` 会短暂启动 PPG 接触检测，其观察时长不含写入与关闭确认时间。采集中读取电量或主动检查接触状态会返回 `busy`；电量充电码、物理单位及未确认的佩戴事件保持未知。升级须补齐新增枚举分支，并按[API 与错误码](API与错误码.md)处理停止未确认。
 
+0.1.13/build29 的实时保存入口为 `.ppg(PPGRecord)` / `.accRecord(ACCRecord)`，直接使用 `record.frame` 和 `record.receive`。旧 `.acc` 同时保留，不能把两个事件重复上传；接收时间及原始文件/行定位已由 SDK 关联，详见[实时帧](数据与时间语义.md#实时帧与接收记录)。App 单元测试可使用[公开值构造器](数据与时间语义.md#应用单元测试)，不需自行解析原始通知。
+
 ## PPI RMSSD（0.1.11 正式算法）
 
 `let results = try PPIHRV.fromBatch(ppiBatch)` 从一次完整的 PPI 历史读取返回数值或 null／原因。有效 `rmssdMilliseconds` 可映射到 `hrv_rmssd`；缺失时跳过评分和提醒更新。默认策略、分组边界与质量存储见[数据与时间语义](数据与时间语义.md)。使用本版本完整二进制包，并重新编译应用。
@@ -134,3 +140,16 @@ print(export)
 `readWearState` 仅支持 `00000808-260604`，观察时长 1–10 秒；`rawACC` 持久采集仅在该固件为默认可用，其他固件的实验能力状态不等于 `startCapture` 已放行。`durationSeconds` 必须有限、>0 且 ≤604800，省略为 86400。
 
 `stopCaptureWithResult` 的 `acknowledged`、`quiescent` 均释放本地会话；`unconfirmed` 保留待清理，最多两次停止尝试。只在 `acknowledged` 时 `stopConfirmed=true`。需要人工结束本地待处理时，按[采集与马达节拍](采集与马达节拍.md)调用 `abandonPendingCapture`；不要删除会话目录。
+
+## 读取与修改设备名称
+
+```swift
+let reading = try await client.readDeviceName()
+print(reading.name ?? "编码未确认") // 设备字段；不保证是广播名
+let receipt = try await client.setDeviceName("TBSoma")
+print(receipt.requestedName, receipt.advertisementVerified) // false：尚未重扫验证
+try await client.disconnect()
+try await client.scan() // 从 discovery 事件取得实际名称，再连接核对身份
+```
+
+名称限定为 1–12 个可打印 ASCII 字符（不能全为空格）。固件可能自动添加 `V5 `；`readDeviceName` 可能继续读到旧字段。发生超时或断连后先重扫，不自动重发。字段和应答语义见[API 与错误码](API与错误码.md#设备名称读取与改名)。

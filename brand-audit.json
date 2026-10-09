@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "scope": "Public deliverable; nested archive contents, filenames, text and decoded binary strings",
   "counts": {
-    "filesIncludingArchiveMembers": 3278,
+    "filesIncludingArchiveMembers": 3312,
     "textFiles": 100,
     "otherBinaryFiles": 60,
     "archives": 13,
-    "jvmClasses": 3101,
+    "jvmClasses": 3135,
     "binaryPlists": 4
   },
   "unexpectedCount": 0,
@@ -15,7 +15,7 @@
   "hardwareExceptionsAllowed": false,
   "coverageLimits": "Decoded text/metadata and binary strings; no OCR, visual logo recognition, originality or legal-rights determination.",
   "scannerSHA256": "b262113e7f756b28466244e49285e1519af9e3b475dbf453b2c78dad5da873b3",
-  "inputManifestSHA256": "755b34d77dc326911efda6a35fcd9c348a4cd4e364d6bfee006c4b0822a4972b",
+  "inputManifestSHA256": "2f34eb894a8843968e8d90cc487e93d9a85fc943c49d8823431308dba4fcbdb0",
   "inputFiles": 122,
   "policy": "no static hardware-name exceptions; third-party notices retained"
 }

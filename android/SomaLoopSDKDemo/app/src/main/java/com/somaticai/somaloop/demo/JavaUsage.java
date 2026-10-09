@@ -22,6 +22,12 @@ public final class JavaUsage implements AutoCloseable {
     public void capabilitySnapshot(SomaLoopJava.Callback<CapabilitySnapshot> callback) {
         sdk.capabilitySnapshot(callback);
     }
+    public void readDeviceName(SomaLoopJava.Callback<DeviceNameReading> callback) {
+        sdk.readDeviceName(callback);
+    }
+    public void setDeviceName(String name, SomaLoopJava.Callback<DeviceNameChangeReceipt> callback) {
+        sdk.setDeviceName(name, callback);
+    }
     public AutoCloseable observe(SomaLoopJava.Listener listener) { return sdk.observe(listener); }
     @Override public void close() { sdk.close(); }
 }

@@ -7,6 +7,16 @@ import kotlinx.serialization.json.JsonObject;
 import kotlinx.serialization.json.JsonPrimitive;
 
 public final class BinaryIntegrationTest {
+    @Test public void deviceNameReadWriteBinarySurface() throws Exception {
+        DeviceNameReading reading = new DeviceNameReading("Original", "raw");
+        DeviceNameChangeReceipt receipt = new DeviceNameChangeReceipt("TBSoma", "response");
+        assertEquals("Original", reading.getName()); assertEquals("raw", reading.getRawHex());
+        assertEquals("TBSoma", receipt.getRequestedName()); assertEquals("response", receipt.getResponseRawHex());
+        assertFalse(receipt.getAdvertisementVerified());
+        assertNotNull(SomaLoopJava.class.getMethod("readDeviceName", SomaLoopJava.Callback.class));
+        assertNotNull(SomaLoopJava.class.getMethod("setDeviceName", String.class, SomaLoopJava.Callback.class));
+    }
+
     @Test public void stopResultClockAndServiceDurationBinarySurface() throws Exception {
         CaptureStopResult result = new CaptureStopResult("test", CaptureStopOutcome.quiescent, 1, "acc_quiet_3_seconds", 1700000000.0);
         assertFalse(result.getStopConfirmed()); assertFalse(result.getCleanupPending());
@@ -578,5 +588,30 @@ public final class BinaryIntegrationTest {
     private static CapabilitySnapshot demoSnapshot(boolean protocolAdmitted, CapabilityEntry entry) {
         return new CapabilitySnapshot(1, "demo-device", "0.0.8.8", "2026-06-04", protocolAdmitted,
                 Collections.singletonMap("ppgOnly", entry), Collections.emptyMap());
+    }
+
+    @Test public void existingDiscoveryConstructorAndCopyStillCompile() {
+        DiscoveredDevice device = new DiscoveredDevice("fake", "v5 Test", -40);
+        assertNull(device.getAdvertisedServiceUUIDs());
+        assertEquals(DiscoveryKind.candidate, PublicDataViewsKt.getDiscoveryKind(device));
+        assertEquals(-50, device.copy("fake", "v5 Test", -50).getRssi());
+        DiscoveredDevice advertised = new DiscoveredDevice("fake", null, -40, Collections.singletonList("FFF0"));
+        assertEquals(advertised.getAdvertisedServiceUUIDs(), advertised.copy("fake", null, -50).getAdvertisedServiceUUIDs());
+    }
+
+    @Test public void hostCanConstructAndConsumeTypedEventsWithoutWireBytes() {
+        DecodedPacket packet = SDKTestValues.packet(PacketKind.realtime);
+        assertEquals(PacketKind.realtime, PublicDataViewsKt.getKind(packet));
+        assertNull(PublicDataViewsKt.getHistoryKind(packet));
+        assertEquals("", packet.getRawHex());
+        ACCFrame acc = SDKTestValues.acc(1, Collections.nCopies(6, new MEMSSample((short) 1, (short) 2, (short) 3)));
+        ECGFrame ecg = SDKTestValues.ecg(2, Collections.nCopies(80, 1L));
+        PPGFrame ppg = SDKTestValues.ppg(65535, Collections.nCopies(50, 0xffffffffL));
+        JournalRecord receipt = new JournalRecord(1000.0, 1.0, "synthetic", null, null, false, false, false, null, null);
+        SDKEvent.ACCRecord accEvent = new SDKEvent.ACCRecord(new ACCRecord(acc, receipt));
+        SDKEvent.PPG ppgEvent = new SDKEvent.PPG(new PPGRecord(ppg, receipt));
+        assertEquals(6, accEvent.getRecord().getFrame().getSamples().size());
+        assertEquals(65535, ppgEvent.getRecord().getFrame().getSequence());
+        assertEquals("", ecg.getRawHex());
     }
 }
