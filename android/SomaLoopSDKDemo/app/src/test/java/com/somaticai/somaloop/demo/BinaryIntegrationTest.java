@@ -525,7 +525,7 @@ public final class BinaryIntegrationTest {
         assertFalse(ui.availability("ppgOnly", false).getEnabled());
         assertTrue(ui.updateHaptics(binding, true));
         assertFalse(ui.availability(null, false).getEnabled());
-        assertEquals("振动尚未确认停止，请先停止并确认", ui.availability(null, false).getReason());
+        assertEquals("振动停止未完成，请重试停止；断连时先重新连接", ui.availability(null, false).getReason());
         assertTrue(ui.recoveryAvailability().getEnabled());
         assertTrue(ui.connectionChanged(binding, ConnectionState.disconnected));
         assertTrue(ui.recoveryAvailability().getEnabled());
@@ -551,7 +551,7 @@ public final class BinaryIntegrationTest {
         DemoRuntimeRequest beforeHaptic = ui.requestRuntime(binding);
         assertTrue(ui.updateHaptics(binding, true));
         assertFalse(ui.applyRuntime(beforeHaptic, false, false, false));
-        assertEquals("振动尚未确认停止，请先停止并确认", ui.availability(null, false).getReason());
+        assertEquals("振动停止未完成，请重试停止；断连时先重新连接", ui.availability(null, false).getReason());
         DemoRuntimeRequest older = ui.requestRuntime(binding);
         DemoRuntimeRequest latest = ui.requestRuntime(binding);
         assertTrue(ui.applyRuntime(latest, false, false, false));

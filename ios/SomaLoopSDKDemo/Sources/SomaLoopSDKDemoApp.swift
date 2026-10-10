@@ -11,6 +11,7 @@ import SomaLoopExperimental
     @Published var accSamples=0
     @Published var ppgSamples=0
     @Published var busy=false
+    @Published var historyKind:HistoryKind = .ppi
     @Published var runtime=DemoRuntimeState()
     @Published var exportURL:URL?
     @Published var profile:DeviceProfile?
@@ -23,9 +24,11 @@ import SomaLoopExperimental
     init(){
         let root=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("SomaLoopSessions")
         client=SomaLoopClient(storageRoot:root)
+        if let error=client.bluetoothConfigurationError{status=error.localizedDescription;return}
         observer=Task{do{for try await event in await client.events(){switch event {
         case .discovery(let d):if let i=devices.firstIndex(where:{$0.id==d.id}){devices[i]=d}else{devices.append(d)}
         case .connection(let s):
+            if [.connecting,.identifying,.ready].contains(s){status="连接进度：\(s.rawValue)"}
             deviceState.transition(to:s);runtime.invalidate()
             if s != .ready {profile=nil;health=nil}
             if s == .ready {deviceState.receive(await client.capabilitySnapshot());await refreshRuntime()}
@@ -62,9 +65,19 @@ import SomaLoopExperimental
         Task{defer{runtime.invalidate();operationCount -= 1;busy=operationCount>0};do{try await work()}catch{status="\(error)"}}
     }
     func scan(){run(.scan){self.devices=[];try await self.client.scan();self.status="扫描中，选择设备编号连接"}}
-    func connect(_ d:DiscoveredDevice){run(.connect){await self.client.stopScan();try await self.client.connect(d);self.status="已读取设备身份与固件"}}
+    func connect(_ d:DiscoveredDevice){run(.connect){await self.client.stopScan();try await self.client.connect(d);self.status="已就绪：已读取本客户端的设备身份与固件"}}
     func start(_ mode:CaptureMode,durationSeconds:Double=86400){run(.capture(mode == .accOnly ? "rawACC" : mode == .ppgOnly ? "ppgOnly":"ppgAccPaired")){self.manifest=try await self.client.startCapture(mode:mode,durationSeconds:durationSeconds);self.status="计划采集 \(durationSeconds) 秒"}}
     func stop(){run(.stopCapture){let result=try await self.client.stopCaptureWithResult();self.manifest=await self.client.currentSession();self.status="停止结果：\(result?.outcome.rawValue ?? "无会话") · 待处理：\(result?.cleanupPending ?? false)"}}
+    func exportHistory(){
+        let kind=historyKind
+        run(.history(kind)){
+            let root=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("SomaLoopHistory")
+            let directory=try await HistoryPageExport.read(client:self.client,kind:kind,root:root)
+            let report=try JSONCoding.decoder().decode(HistoryPageExport.Report.self,from:Data(contentsOf:directory.appendingPathComponent("report.json")))
+            self.exportURL=directory
+            self.status="\(kind)：\(report.pages.count) 页 / \(report.pages.reduce(0){$0+$1.records}) 条；\(report.complete ? "本次传输完成":"不完整："+(report.interruption ?? "未知"))；原文已保存"
+        }
+    }
     func export(){run(.exportCapture){let root=FileManager.default.temporaryDirectory.appendingPathComponent("SomaLoopExports");self.exportURL=try await self.client.exportSession(to:root);self.status="已生成带 SHA-256 校验值的快照"}}
 
 }
@@ -105,11 +118,11 @@ struct DemoView:View {
         Section("马达振动 · 振动节拍") {
             Text("默认片段：120 BPM，短、短、长、休止；总长 2 秒。开启窗口 100 / 300 ms。").font(.caption)
             Button("本地编译预览 · 不触发设备"){model.run(.preview){let p=try HapticPattern.firstPulse.compile(preview:true);model.status="预览：\(p.durationMs) ms / \(p.events.count / 2) 个脉冲"}}.demoAvailability(model.disabledReason(.preview))
-            Button("播放振动 · 短短长休止"){model.run(.playHaptics){model.haptics=try await model.client.playHaptics(.firstPulse);model.status="片段：\(model.haptics!.status)；\(model.haptics!.error ?? "请确认振动已停止")"}}.demoAvailability(model.disabledReason(.playHaptics))
+            Button("播放振动 · 短短长休止"){model.run(.playHaptics){model.haptics=try await model.client.playHaptics(.firstPulse);model.status="片段：\(model.haptics!.status)；\(model.haptics!.error ?? (model.haptics!.pendingStop ? "停止未完成，请重试停止":"已自动收尾，可以开始采集"))"}}.demoAvailability(model.disabledReason(.playHaptics))
             Button("立即停止节拍",role:.destructive){model.run(.stopHaptics){await model.client.stopHaptics();model.haptics=await model.client.currentHaptics()}}
             if let h=model.haptics {
-                Text("\(h.status) · \(h.error ?? "无软件错误") · 待确认停止 \(h.pendingStop ? "是":"否")").font(.caption)
-                Button("确认手环已完全停止"){model.run(.confirmHaptics){try await model.client.confirmHapticsStopped(sessionID:h.id);model.haptics=await model.client.currentHaptics()}}.demoAvailability(model.disabledReason(.confirmHaptics))
+                Text("\(h.status) · \(h.error ?? "无软件错误") · 待处理停止 \(h.pendingStop ? "是":"否")").font(.caption)
+                if h.pendingStop { Button("异常处理：我已确认手环停止"){model.run(.confirmHaptics){try await model.client.confirmHapticsStopped(sessionID:h.id);model.haptics=await model.client.currentHaptics()}}.demoAvailability(model.disabledReason(.confirmHaptics)) }
                 Button("导出节拍日志 JSON"){model.run(.exportHaptics){model.exportURL=try await model.client.exportHaptics(to:FileManager.default.temporaryDirectory.appendingPathComponent("SomaLoopExports"))}}.demoAvailability(model.disabledReason(.exportHaptics))
             }
         }
@@ -118,7 +131,9 @@ struct DemoView:View {
             Button("读取电量"){model.run(.deviceInfo){let value=try await model.client.readBattery();model.status="电量：\(value.percentage.value.map{String($0)+"%"} ?? "未知") · \(value.percentage.quality)"}}.demoAvailability(model.disabledReason(.deviceInfo))
             Button("检查接触状态 · 5 秒"){model.run(.capture("ppgAccPaired")){let value=try await model.client.readWearState(timeoutSeconds:5);model.status="接触：\(value.state.rawValue) · \(value.source)"}}.demoAvailability(model.disabledReason(.capture("ppgAccPaired")))
             Button("读取设备信息"){model.run(.deviceInfo){let d=try await model.client.readDeviceInfo();model.status=d.filter{$0.opcode != 0x3e}.map{"0x\(String($0.opcode,radix:16)) \($0.fields)"}.joined(separator:"\n")}}.demoAvailability(model.disabledReason(.deviceInfo))
-            Button("读取温度历史一批"){model.run(.history(.temperature)){let b=try await model.client.readHistoryBatch(.temperature);model.status="记录 \(b.records.count) / 通知 \(b.notificationCount) / 结束标记 \(b.complete) / 中断 \(String(describing:b.interruption))"}}.demoAvailability(model.disabledReason(.history(.temperature)))
+            Picker("历史类型",selection:$model.historyKind){ForEach(HistoryKind.allCases,id:\.rawValue){kind in Text("\(kind) · \(kind.rawValue)").tag(kind)}}.disabled(model.busy)
+            Button("读取所选历史全部页并导出原文",action:model.exportHistory).demoAvailability(model.disabledReason(.history(model.historyKind)))
+            Text("每页原文保存成功后再续读；转换失败另记错误。完成仅表示本次传输结束，不保证覆盖设备全部使用历史。").font(.caption)
             Button("心率测量 · 40 秒"){model.run(.feature("measurements")){let d=try await model.client.measure(.heartRate);model.status="收到 \(d.count) 个实时结果"}}.demoAvailability(model.disabledReason(.feature("measurements")))
             Button("读取设备时间与偏移"){model.run(.readClock){let offset=TimeZone.current.secondsFromGMT()/60;let clock=try await model.client.readDeviceClock(utcOffsetMinutes:offset);model.status="设备领先主机 \(clock.offsetSeconds ?? 0) 秒；不确定度 ±\(clock.uncertaintySeconds) 秒。时区假设：UTC \(offset) 分钟"}}.demoAvailability(model.disabledReason(.readClock))
             Button("校准设备时间并回读"){model.run(.feature("clockWrite")){let result=try await model.client.synchronizeClock(utcOffsetMinutes:TimeZone.current.secondsFromGMT()/60);model.status="回读验证：\(result.verified)；历史时钟区间标识：\(result.clockEpoch)"}}.demoAvailability(model.disabledReason(.feature("clockWrite")))

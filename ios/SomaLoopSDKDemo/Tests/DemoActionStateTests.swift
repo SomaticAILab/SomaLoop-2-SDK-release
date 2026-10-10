@@ -26,6 +26,18 @@ final class DemoActionStateTests:XCTestCase {
     private let deviceActions:[DemoAction] = [.capture("ppgOnly"),.capture("ppgAccPaired"),.deviceInfo,.readClock,
         .history(.temperature),.feature("clockWrite"),.feature("measurements"),.playHaptics]
 
+    func testScanningKeepsDeviceSelectionAvailableAndConnectionProgressBlocksIt() {
+        var state=DemoActionState()
+        state.device.transition(to:.scanning)
+        XCTAssertNil(state.disabledReason(for:.connect))
+        state.busy=true;XCTAssertNotNil(state.disabledReason(for:.connect))
+        state.busy=false
+        for progress:ConnectionState in [.connecting,.identifying,.reconnecting] {
+            state.device.transition(to:progress)
+            XCTAssertNotNil(state.disabledReason(for:.connect));XCTAssertNotNil(state.disabledReason(for:.scan))
+        }
+        state.device.transition(to:.disconnected);XCTAssertNil(state.disabledReason(for:.connect))
+    }
     func testDisconnectRevokesCachedCapabilitiesAndRejectsLateSnapshot()throws {
         var state=try readyState()
         XCTAssertNil(state.disabledReason(for:.capture("ppgOnly")))
@@ -97,7 +109,7 @@ final class DemoActionStateTests:XCTestCase {
         XCTAssertNil(state.disabledReason(for:.connect))
         XCTAssertNil(state.disabledReason(for:.stopHaptics))
         XCTAssertNil(state.disabledReason(for:.confirmHaptics))
-        for action in deviceActions {XCTAssertTrue(state.disabledReason(for:action)?.contains("节拍停止待确认") == true)}
+        for action in deviceActions {XCTAssertTrue(state.disabledReason(for:action)?.contains("节拍停止未完成") == true)}
     }
     func testMeasurementUsesAvailabilityWithoutFirmwareAdmission()throws {
         var state=try readyState()

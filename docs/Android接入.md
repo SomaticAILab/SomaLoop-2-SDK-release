@@ -1,6 +1,6 @@
 # Android / Java 接入
 
-SomaLoop 2 SDK 0.1.15 / build 32 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
+SomaLoop 2 SDK 0.1.16 / build 33 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
 
 ## 安装与构建
 
@@ -18,8 +18,8 @@ dependencyResolutionManagement {
 
 // app/build.gradle.kts
 dependencies {
-    implementation("com.somaticai.somaloop:sdk:0.1.15")
-    implementation("com.somaticai.somaloop:experimental:0.1.15") // 研究入口，可选
+    implementation("com.somaticai.somaloop:sdk:0.1.16")
+    implementation("com.somaticai.somaloop:experimental:0.1.16") // 研究入口，可选
 }
 ```
 
@@ -185,3 +185,7 @@ client.scan() // 从 Discovery 事件取得实际名称，再连接核对身份
 Java 使用 `SomaLoopJava.readDeviceName(Callback<DeviceNameReading>)` 和 `setDeviceName("TBSoma", Callback<DeviceNameChangeReceipt>)`；通过 `getName()`、`getRequestedName()`、`getResponseRawHex()`、`getAdvertisementVerified()` 读取结果。
 
 名称限定为 1–12 个可打印 ASCII 字符（不能全为空格）。固件可能自动添加 `V5 `；`readDeviceName` 可能继续读到旧字段。发生超时或断连后先重扫，不自动重发。字段和应答语义见[API 与错误码](API与错误码.md#设备名称读取与改名)。
+
+## 恢复出厂
+
+0.1.16 新增正式 `factoryReset` 能力，支持 0.0.8.8 / 260604。App 操作前提示用户准备已通电的充电底座、保存所需数据；请求后需取下再放回底座唤醒，名称和部分设置会恢复，部分历史可能保留。按[恢复出厂](恢复出厂.md)完成一次性确认、单次请求、持久结果查询、只读核验及显式校时，不自动重发。

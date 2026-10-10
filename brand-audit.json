@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "scope": "Public deliverable; nested archive contents, filenames, text and decoded binary strings",
   "counts": {
-    "filesIncludingArchiveMembers": 3312,
-    "textFiles": 100,
+    "filesIncludingArchiveMembers": 3341,
+    "textFiles": 103,
     "otherBinaryFiles": 60,
     "archives": 13,
-    "jvmClasses": 3135,
+    "jvmClasses": 3161,
     "binaryPlists": 4,
     "reviewedSwiftInstructionLiterals": 1
   },
@@ -17,7 +17,7 @@
   "reviewedDiscoveryCompatibilityLiteralsAllowed": true,
   "coverageLimits": "Decoded text/metadata and binary strings; no OCR, visual logo recognition, originality or legal-rights determination.",
   "scannerSHA256": "bdde604632889bf1e61fc98439dff65dd08e5040d503cc71f73278acac36cf6a",
-  "inputManifestSHA256": "4caed487fdd511805fb257532774965d51b54b1f2a980bbddc8fefb95bbd2995",
-  "inputFiles": 122,
+  "inputManifestSHA256": "0a95f138f96de52856b9dbe8eb2970921dd640cbf8b19602dc7c1f6e04a93bfd",
+  "inputFiles": 125,
   "policy": "only reviewed factory-discovery literals in scoped runtime/docs/tests; no general hardware-name exceptions; third-party notices retained"
 }

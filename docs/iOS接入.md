@@ -1,6 +1,6 @@
 # iOS 接入
 
-SomaLoop 2 SDK 0.1.15 / build 32 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
+SomaLoop 2 SDK 0.1.16 / build 33 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
 
 ## 安装
 
@@ -10,6 +10,37 @@ SomaLoop 2 SDK 0.1.15 / build 32 支持 iOS 15 及以上。主模块为 `SomaLoo
 4. 安装完整 Xcode，并在 Xcode Settings 中选择 Command Line Tools；安装 Homebrew 后执行 `brew install xcodegen`。运行 Demo 时，先在 `ios/SomaLoopSDKDemo` 执行 `xcodegen generate`，再打开生成的 `SomaLoopSDKDemo.xcodeproj`，并配置签名团队。
 
 XCFramework 包含设备及模拟器架构。已发布 0.1.11/build27 使用 Apple Swift 6.1.2 构建；包清单 tools-version=5.10 是清单解析要求，不是已验证的最低 Xcode 版本承诺。当前制品验证摘要见随包 release-report.json。升级时替换完整 Package，保持主库与研究库版本一致。`SomaLoop.version` 为版本号，`SomaLoop.buildRevision` 为源码与构建输入指纹；数字构建号见随包 `build-identity.json` 的 `buildNumber`。
+
+## 蓝牙配置：状态恢复与纯前台
+
+从 0.1.16 / build 33 起，推荐使用可抛错的显式模式初始化。先在 **App target** 的 Info.plist 配置使用说明；启用状态恢复时还必须包含后台蓝牙模式：
+
+```xml
+<key>NSBluetoothAlwaysUsageDescription</key>
+<string>连接您选择的手环并读取设备数据。</string>
+<key>UIBackgroundModes</key>
+<array>
+    <string>bluetooth-central</string>
+</array>
+```
+
+Xcode 对应 **Background Modes → Uses Bluetooth LE accessories**。把这段配置放在 SDK framework 的 plist 中不生效。状态恢复标识必须非空，对同一逻辑控制器保持稳定，不同存活控制器使用不同标识。
+
+```swift
+// 状态恢复：要求上面两项配置。
+let client = try SomaLoopClient(
+    storageRoot: root,
+    bluetoothMode: .stateRestoration(identifier: "your.app.somaloop.central")
+)
+// 或纯前台：只要求 NSBluetoothAlwaysUsageDescription，不传系统恢复选项。
+let foregroundClient = try SomaLoopClient(storageRoot: otherRoot, bluetoothMode: .foregroundOnly)
+```
+
+上面是两种可选接入方式，通常只创建一个客户端；不同客户端不能共用同一个 storageRoot。`.foregroundOnly` 不启用系统蓝牙状态恢复，不承诺后台采集或进程终止后的自动恢复；离开前台时由 App 停止任务，并继续转发已有生命周期接口。
+
+可在创建客户端之前调用 `try BluetoothMode.foregroundOnly.validateConfiguration()`，它不创建蓝牙控制器、不弹权限请求。配置错误抛 `BluetoothConfigurationError`：`missingUsageDescription`、`missingBackgroundCentral` 或 `invalidRestorationIdentifier`，`localizedDescription` 指明需要补充的 plist 字段。这与权限拒绝 `permissionDenied`、蓝牙关闭 `bluetoothUnavailable` 不同。
+
+旧的非抛错 `SomaLoopClient(storageRoot:restorationIdentifier:)` 保持兼容，默认仍启用状态恢复。无效配置不会创建 `CBCentralManager`；可立即检查 `client.bluetoothConfigurationError`，后续扫描或连接也会抛相同配置错误。不要传空字符串来关闭恢复，改用 `.foregroundOnly`。这里校验 iOS 主 App 的配置，不替代用户授予蓝牙权限，也不验证签名或后台运行效果。
 
 ## 发现与连接
 
@@ -46,7 +77,7 @@ try await client.scan()
 
 扫描没有“所有设备已返回”的完成通知。列表按 `DiscoveredDevice.id` 更新，名称不能用作数据库身份键或功能准入依据。设备选择完成后调用：
 
-`discoveryKind` / `discoveryEvidence` 是 0.1.13/build29 新增的候选提示。`candidate` 表示广播信息匹配，`unknown` 表示尚无识别依据；两者都应在连接后检查分项能力。此版本目前为本地开发候选，已发布的旧包需等待对应新二进制后再使用这些新增接口。
+`discoveryKind` / `discoveryEvidence` 是 0.1.13/build29 新增的候选提示。`candidate` 表示广播信息匹配，`unknown` 表示尚无识别依据；两者都应在连接后检查分项能力。候选提示不代表已建立当前客户端连接或完成身份核对。
 
 ```swift
 func connectSelected(_ device: DiscoveredDevice, client: SomaLoopClient) async throws {
@@ -66,9 +97,8 @@ func connectSelected(_ device: DiscoveredDevice, client: SomaLoopClient) async t
 ```swift
 func readTemperature(client: SomaLoopClient) async throws -> HistoryBatch {
     let batch = try await client.readHistoryBatch(.temperature)
-    let records = try batch.typedRecords
-    print(records.count, batch.notificationCount, batch.complete)
-    // 先保存 records，再检查 interruption 和 continuationAvailable。
+    // 这是单页查询；完整原文保存与续页使用下方 saveHistoryPages 示例。
+    print(batch.records.count, batch.notificationCount, batch.complete)
     return batch
 }
 
@@ -82,6 +112,47 @@ func readSport(client: SomaLoopClient) async throws -> HistoryBatch {
 `nil`、零和字段缺失分别保存；不要把无效心率的空值改成 0，也不要把有效的零步数丢弃。保存方式见[数值与缺失](数据与时间语义.md#数值单位与缺失)，再次读取及事务保存见[增量同步示例](数据与时间语义.md#增量同步与-clockepoch)。
 
 SDK 支持有效四字节 BCD 固件版本 ≥0.0.8.8，全部 15 类历史（包含 alarms）及独立闹钟设置读取为 C，默认直接读取。闹钟入口为 `readSettings(.alarms)`，只有完整列表才返回；需要保留部分结果时使用历史批次入口。各接口的固件范围和读取选项见 [API 与错误码](API与错误码.md)。
+
+## 完整分页：先保存原文，再判断结束
+
+下面的循环适用于一次连接中的一个历史类型。每次调用新建目录，按页保存完整 `HistoryBatch`，不会把 `complete == false` 直接判为失败：
+
+```swift
+enum HistoryExampleError: Error { case pageLimitReached }
+
+func saveHistoryPages(client: SomaLoopClient, kind: HistoryKind,
+                      exportRoot: URL) async throws -> URL {
+    let directory = exportRoot.appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    var continuation = false
+    for page in 1...1000 {
+        try Task.checkCancellation()
+        let batch = try await client.readHistoryBatch(kind, continuation: continuation)
+        let file = directory.appendingPathComponent(String(format: "page-%04d.json", page))
+        try JSONCoding.encoder().encode(batch).write(to: file, options: .atomic)
+        // 原文保存成功后才允许续读。类型化转换应另存，失败不能替换为空成功。
+        if let interruption = batch.interruption { throw interruption }
+        if batch.complete && !batch.continuationAvailable { return directory }
+        guard !batch.complete && batch.continuationAvailable else { throw SDKError.protocolMismatch }
+        continuation = true
+    }
+    throw HistoryExampleError.pageLimitReached // 本地上限，不是设备结束标记。
+}
+```
+
+| 返回状态 | 示例处理 |
+| --- | --- |
+| complete=false、无 interruption、continuationAvailable=true | 正常待续页；保存后继续 |
+| interruption 非空，即使同时 complete=true | 保留当前页，标记不完整，不再请求下一页 |
+| complete=true、无 interruption、continuationAvailable=false | 保存后标记本次传输完成；0 条也可以是合法空结果 |
+| 无中断但结束/续页标志矛盾 | 保留原文，报 protocolMismatch，不猜测完成 |
+
+示例循环运行期间，App 应独占该客户端的历史读取，禁用切换类型、重连或启动另一读取的入口。断连、换类型、重新开始后不复用旧 continuation；重新调用从第一页开始，保存到新目录，不把两轮结果简单相加。持久化失败立即停止续页；目录中的已存页面仍保留。上述函数抛错时也不要删除原文目录。
+
+交付 Demo 的 `HistoryPageExport.swift` 是完整可运行版本：支持选择 15 类历史，保存 `page-NNNN.json`、可选 `typed-NNNN.json` 和 `report.json`（页数、记录数、SHA-256、类型转换错误、传输完成/中断状态、设备与构建身份）。每页原文和报告先保存，再进行下一次读取。类型化失败不写空数组冒充成功；文件写入失败不继续请求。导出按钮使用系统文件选择器复制这次目录，不自动上传。原文保留设备日期、空值和零值，不自动校时、清除或改写异常年份。
+
+“本次传输完成”只说明这次读取正常结束，不保证包含设备整个使用周期的全部历史，也不代表所有单位、时间与业务语义已验证。
+
 
 ## 限时原始 ECG
 
@@ -153,3 +224,13 @@ try await client.scan() // 从 discovery 事件取得实际名称，再连接核
 ```
 
 名称限定为 1–12 个可打印 ASCII 字符（不能全为空格）。固件可能自动添加 `V5 `；`readDeviceName` 可能继续读到旧字段。发生超时或断连后先重扫，不自动重发。字段和应答语义见[API 与错误码](API与错误码.md#设备名称读取与改名)。
+
+## 恢复出厂
+
+0.1.16 新增正式 `factoryReset` 能力，支持 0.0.8.8 / 260604。App 操作前提示用户准备已通电的充电底座、保存所需数据；请求后需取下再放回底座唤醒，名称和部分设置会恢复，部分历史可能保留。按[恢复出厂](恢复出厂.md)完成一次性确认、单次请求、持久结果查询、只读核验及显式校时，不自动重发。
+
+## 扫描与选择设备的 App 状态
+
+`scan()` 在扫描启动后返回，不会等待用户选择设备。把 App 的 busy 标记限定在这次启动调用内；`.scanning` 期间保持已发现设备可选。选择时先 `await client.stopScan()`，再 `try await client.connect(device)`；`.connecting` / `.identifying` 期间禁用重复选择，并展示进度，到 `.ready` 后读取新的能力快照。扫描没有“全部设备已返回”的完成通知。
+
+系统或原生 App 显示“已连接”，不代表这个 SDK 客户端已经连接、发现服务并核对身份。当前 Demo 按设备 ID 更新列表，支持扫描中选择、先停扫再连接，并在断连后清除旧能力状态。
