@@ -82,7 +82,7 @@ class DemoCapabilityState {
         if(!sessionKnown||!hapticsKnown)return DemoAvailability(false,"正在读取会话和停止状态")
         if(operations>0)return DemoAvailability(false,"设备操作进行中，请等待完成")
         if(capturePending)return DemoAvailability(false,"采集进行中或等待停止清理")
-        if(hapticPending)return DemoAvailability(false,"振动尚未确认停止，请先停止并确认")
+        if(hapticPending)return DemoAvailability(false,"振动停止未完成，请重试停止；断连时先重新连接")
         if(key==null)return DemoAvailability(true,"手环已就绪")
         val entry=if(key.startsWith("history:"))current.history[key.substringAfter(":")] else current.capabilities[key]
         entry?:return DemoAvailability(false,"SDK 未报告此能力")
@@ -145,9 +145,9 @@ class MainActivity:Activity(){
         button("导出会话 ZIP"){run{snapshot=sdk().exportSession(File(cacheDir,"SomaLoopExports"));startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).setType("application/zip").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE,"SomaLoop-${snapshot!!.name}.zip"),102)}}
         text("马达振动 · 默认振动节拍为短、短、长、休止，共 2 秒。",13f)
         button("本地编译预览 · 不触发设备"){run{val p=HapticPattern.firstPulse.compile(true);status.text="预览：${p.durationMs} ms / ${p.events.size / 2} 个脉冲"}}
-        supportedButton("振动 2 秒 · 短短长休止","hapticRhythm"){runDevice{val h=sdk().playHaptics(HapticPattern.firstPulse);status.text="振动：${h.status} / ${h.error?:"请确认手环已停止"}"}}
-        recoveryButton("立即停止振动"){runDevice{sdk().stopHaptics();status.text="停止已请求；请核对手环是否完全停止"}}
-        recoveryButton("确认手环已完全停止"){runDevice{val h=sdk().currentHaptics()?:throw SDKException(ErrorCode.invalidArgument);sdk().confirmHapticsStopped(h.id);status.text="已记录使用者停止确认"}}
+        supportedButton("振动 2 秒 · 短短长休止","hapticRhythm"){runDevice{val h=sdk().playHaptics(HapticPattern.firstPulse);status.text="振动：${h.status} / ${h.error?:(if(h.pendingStop)"停止未完成，请重试停止" else "已自动收尾，可以开始采集")}"}}
+        recoveryButton("立即停止振动"){runDevice{sdk().stopHaptics();status.text=if(sdk().currentHaptics()?.pendingStop==true)"停止未完成，请重试或重新连接" else "停止流程已完成"}}
+        recoveryButton("异常处理：我已确认手环停止"){runDevice{val h=sdk().currentHaptics()?:throw SDKException(ErrorCode.invalidArgument);sdk().confirmHapticsStopped(h.id);status.text="已记录使用者停止确认"}}
         button("导出振动日志 JSON"){run{snapshot=sdk().exportHaptics(File(cacheDir,"SomaLoopExports"));startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE,snapshot!!.name),103)}}
         supportedButton("读取设备信息",null){runDevice{val result=sdk().readDeviceInfoPartial();val value=result.batteryReading;status.text="电量 ${value?.percentage?.value?.let{"$it%"}?:"未知"} · ${value?.percentage?.quality?:"无通知"}"}}
         supportedButton("读取电量",null){runDevice{val value=sdk().readBattery();status.text="电量 ${value.percentage.value?.let{"$it%"}?:"未知"} · ${value.percentage.quality} · 接收 ${value.readAt}"}}
@@ -211,7 +211,7 @@ class MainActivity:Activity(){
         is SDKEvent.PPG->stats.text="收到 PPG：${event.record.frame.values.size} 点 · 序号 ${event.record.frame.sequence} · 接收 ${event.record.receive.time}"
         is SDKEvent.Health->status.text="采集状态：${event.health.state} / ${event.health.reason}"
         is SDKEvent.Capture->{capabilityState.updateSession(binding,event.session.requested,event.session.cleanupPending);renderAvailability()}
-        is SDKEvent.Haptics->{capabilityState.updateHaptics(binding,event.report.pendingStop);renderAvailability();status.text="振动 ${event.report.status} / ${event.report.error?:"无软件错误"} / 待确认停止 ${event.report.pendingStop}"}
+        is SDKEvent.Haptics->{capabilityState.updateHaptics(binding,event.report.pendingStop);renderAvailability();status.text="振动 ${event.report.status} / ${event.report.error?:"无软件错误"} / 待处理停止 ${event.report.pendingStop}"}
         is SDKEvent.Failure->status.text="${event.code}：${event.message}"
         else->Unit
     }}}}

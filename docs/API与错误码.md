@@ -9,6 +9,7 @@ Swift 使用 actor 和 `async/await`；Kotlin 主要使用 `suspend` 与 `Flow`�
 | 任务 | Swift | Kotlin / Java |
 | --- | --- | --- |
 | 事件 | `events()` | Kotlin `events()`；Java `observe(listener)` |
+| 恢复出厂 | `prepareFactoryReset`、`requestFactoryReset`、`readFactoryResetAttempt`、`verifyFactoryResetRecovery` | 同名；Java 使用 Callback，见[恢复出厂](恢复出厂.md) |
 | 扫描与连接 | `scan`、`stopScan`、`connect`、`disconnect` | 同名 |
 | 宿主系统连接列表 | `retrieveConnectedDevices` | 无对应入口（仅 Apple 平台） |
 | 能力 | `capabilities`、`capabilitySnapshot` | 同名 |
@@ -79,7 +80,7 @@ raw ECG 和马达默认可调用。联合采集、校时及历史时间规则仅
 
 马达使用普通 `playHaptics` 入口，在前台播放；取消、后台切换和异常均尝试关闭。可用 `HapticPattern.validationIssues` 检查参数，`compile` 对无效参数抛出 `invalidArgument`。
 
-待关闭记录按设备持久保存，恢复关闭核对原 MAC、固件和日期。身份变化时保留待处理记录，相关操作返回 `stopUnconfirmed`；其他设备不受该条记录阻挡。用户确认停止后调用 `confirmHapticsStopped`。`abandonPendingHaptics` 需要非空理由及明确确认，只清理本地待处理项并保存审计，不发送关闭命令。详见[采集与马达](采集与马达节拍.md)。
+待关闭记录按设备持久保存，恢复关闭核对原 MAC、固件和日期。身份变化时保留待处理记录，相关操作返回 `stopUnconfirmed`；其他设备不受该条记录阻挡。正常停止应答观察和报告保存成功后自动解除占用，无需人工确认，`userConfirmedStopped=false` 不代表忙。仅异常处理收到真实用户反馈后才调用 `confirmHapticsStopped`。`abandonPendingHaptics` 需要非空理由及明确确认，只清理本地待处理项并保存审计，不发送关闭命令。详见[采集与马达](采集与马达节拍.md)。
 
 历史清除不可逆，仅 0.0.8.8 开放实验入口，默认关闭。准备与执行各传 `allowExperimental=true`，执行另传 `confirm=true`；省略实验开关的旧签名返回 `unverifiedCapability`。准备凭证绑定当前连接、设备及类型，执行后重新连接并读回；取消和失败不回滚已发出的请求。详细范围和示例见[历史清除](历史清除.md)。
 
@@ -98,7 +99,7 @@ raw ECG 和马达默认可调用。联合采集、校时及历史时间规则仅
 | `queueOverflow` | 减轻事件处理负担并保存中断信息 |
 | `storageFailure` | 处理目录权限、文件或空间问题，保留待停止状态 |
 | `timingViolation`、`linkTooSlow` | 停止马达操作并保留报告 |
-| `stopUnconfirmed` | 处理持久待关闭项和用户停止确认 |
+| `stopUnconfirmed` | 重试停止或重连原设备完成关闭；用户确认仅为异常处理 |
 
 Swift 使用 `SDKError`；Kotlin 使用 `SDKException.code`，Java 回调使用 `ErrorCode`。按错误码处理，不解析自由文本。部分结果对象可同时含 `interruption`，应与方法返回值一并保存。
 
@@ -158,3 +159,7 @@ Swift 使用 `SDKError`；Kotlin 使用 `SDKException.code`，Java 回调使用 
 固件 `00000808-260604` 的独立 Mac 探针实测：写入 `TBSoma` 后，广播为 `V5 TBSoma`，而读取接口仍返回旧名称字段。`V5 ` 是固件行为，SDK 不保证所有固件都添加这个前缀；前缀移除、恢复原厂名称、重启持久性未验证。该次独立探针结果不冒充本构建或手机验收。
 
 **超时、取消、连接中断或写入错误不等于设备未改名。** 单次调用不会自动重发；在决定重试前重新扫描并核对实际状态。固件可能在名称改变后主动断连；没有匹配应答时接口仍报告实际错误，不能宣称改名失败或广播验证成功。
+
+### iOS 蓝牙配置错误
+
+0.1.16 / build 33 新增 `SomaLoopClient(storageRoot:bluetoothMode:firmwarePolicy:connectionClockSync:) throws`，`BluetoothMode` 可选 `.foregroundOnly` 或 `.stateRestoration(identifier:)`。`BluetoothConfigurationError` 是独立的宿主配置错误类型（不在 SDKError 中）：`missingUsageDescription`、`missingBackgroundCentral`、`invalidRestorationIdentifier`。旧非抛错初始化保持兼容，`bluetoothConfigurationError` 可同步读取；无效配置不创建系统蓝牙控制器，扫描/连接抛相同错误。详见 [iOS 配置与分页示例](iOS接入.md)。

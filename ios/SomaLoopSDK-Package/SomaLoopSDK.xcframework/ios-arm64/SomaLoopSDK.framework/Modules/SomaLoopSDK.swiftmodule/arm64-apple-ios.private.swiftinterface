@@ -144,6 +144,23 @@ extension SomaLoopSDK.DecodedPacket {
     get
   }
 }
+public enum BluetoothMode : Swift.Equatable, Swift.Sendable {
+  case foregroundOnly
+  case stateRestoration(identifier: Swift.String)
+  public func validateConfiguration() throws
+  public static func == (a: SomaLoopSDK.BluetoothMode, b: SomaLoopSDK.BluetoothMode) -> Swift.Bool
+}
+public enum BluetoothConfigurationError : Swift.String, Swift.Error, Foundation.LocalizedError, Swift.Sendable {
+  case missingUsageDescription, missingBackgroundCentral, invalidRestorationIdentifier
+  public var errorDescription: Swift.String? {
+    get
+  }
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
 public enum CaptureStopOutcome : Swift.String, Swift.Codable, Swift.Sendable {
   case acknowledged, quiescent, unconfirmed, abandoned
   public init?(rawValue: Swift.String)
@@ -292,6 +309,61 @@ public struct DeviceNameChangeReceipt : Swift.Codable, Swift.Equatable, Swift.Se
   }
   public init(requestedName: Swift.String, responseRawHex: Swift.String)
   public static func == (a: SomaLoopSDK.DeviceNameChangeReceipt, b: SomaLoopSDK.DeviceNameChangeReceipt) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct FactoryResetPreparation : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let id: Swift.String, deviceIdentity: Swift.String
+  public let createdAt: Swift.Double, expiresAt: Swift.Double
+  public static func == (a: SomaLoopSDK.FactoryResetPreparation, b: SomaLoopSDK.FactoryResetPreparation) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public enum FactoryResetStatus : Swift.String, Swift.Codable, Swift.Sendable {
+  case intent, acknowledged, indeterminate
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public struct FactoryResetRecovery : Swift.Codable, Swift.Sendable {
+  public let attemptID: Swift.String, deviceIdentity: Swift.String
+  public let observedAt: Swift.Double
+  public let clock: SomaLoopSDK.ClockSnapshot
+  public let nameField: SomaLoopSDK.DeviceNameReading
+  public let settings: [SomaLoopSDK.SettingSnapshot]
+  public var historyErasureVerified: Swift.Bool {
+    get
+  }
+  public var clockSynchronizationPerformed: Swift.Bool {
+    get
+  }
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct FactoryResetAttempt : Swift.Codable, Swift.Sendable {
+  public let id: Swift.String, deviceIdentity: Swift.String, mac: Swift.String, firmwareHex: Swift.String, dateHex: Swift.String
+  public let requestedAt: Swift.Double, clockEpoch: Swift.String, previousClockWriteEpoch: Swift.String?
+  public let clockBefore: SomaLoopSDK.ClockSnapshot
+  public var status: SomaLoopSDK.FactoryResetStatus {
+    get
+  }
+  public var responseRawHex: Swift.String? {
+    get
+  }
+  public var error: SomaLoopSDK.SDKError? {
+    get
+  }
+  public var recovery: SomaLoopSDK.FactoryResetRecovery? {
+    get
+  }
+  public var checkpointResetRequired: Swift.Bool {
+    get
+  }
+  public var requiresChargingWake: Swift.Bool {
+    get
+  }
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
 }
@@ -1101,6 +1173,9 @@ public enum SomaContractAdapter {
   public var currentClockEpoch: Swift.String {
     get
   }
+  public var lastFactoryResetAttempt: SomaLoopSDK.FactoryResetAttempt? {
+    get
+  }
   public var researchStopConfirmed: Swift.Bool {
     get
   }
@@ -1110,6 +1185,10 @@ public enum SomaContractAdapter {
   public var profile: SomaLoopSDK.DeviceProfile? {
     get
   }
+  nonisolated public var bluetoothConfigurationError: SomaLoopSDK.BluetoothConfigurationError? {
+    get
+  }
+  public init(storageRoot: Foundation.URL, bluetoothMode: SomaLoopSDK.BluetoothMode, firmwarePolicy: SomaLoopSDK.FirmwareAdmissionPolicy = .standard, connectionClockSync: SomaLoopSDK.ClockSyncPolicy? = nil) throws
   public init(storageRoot: Foundation.URL, firmwarePolicy: SomaLoopSDK.FirmwareAdmissionPolicy = .standard, connectionClockSync: SomaLoopSDK.ClockSyncPolicy? = nil, restorationIdentifier: Swift.String = "com.somaticai.somaloop.central")
   public init(replay: SomaLoopSDK.ReplayBLETransport, storageRoot: Foundation.URL, firmwarePolicy: SomaLoopSDK.FirmwareAdmissionPolicy = .standard, connectionClockSync: SomaLoopSDK.ClockSyncPolicy? = nil)
   public func events() -> _Concurrency.AsyncThrowingStream<SomaLoopSDK.SDKEvent, any Swift.Error>
@@ -1127,6 +1206,10 @@ public enum SomaContractAdapter {
   public func capabilities() -> [Swift.String : SomaLoopSDK.CapabilityState]
   public func capabilitySnapshot() -> SomaLoopSDK.CapabilitySnapshot
   public func exportDiagnostics(to directory: Foundation.URL) throws -> Foundation.URL
+  public func prepareFactoryReset() throws -> SomaLoopSDK.FactoryResetPreparation
+  public func requestFactoryReset(_ preparation: SomaLoopSDK.FactoryResetPreparation, confirm: Swift.Bool) async throws -> SomaLoopSDK.FactoryResetAttempt
+  public func readFactoryResetAttempt(id: Swift.String) throws -> SomaLoopSDK.FactoryResetAttempt?
+  public func verifyFactoryResetRecovery(_ device: SomaLoopSDK.DiscoveredDevice, attemptID: Swift.String) async throws -> SomaLoopSDK.FactoryResetRecovery
   public func readDeviceClock(utcOffsetMinutes: Swift.Int? = nil) async throws -> SomaLoopSDK.ClockSnapshot
   public func synchronizeClock(utcOffsetMinutes: Swift.Int) async throws -> SomaLoopSDK.ClockSynchronization
   public func captureHealth() -> SomaLoopSDK.CaptureHealth
@@ -1185,6 +1268,9 @@ extension SomaLoopSDK.CaptureMode : Swift.RawRepresentable {}
 extension SomaLoopSDK.ChargingState : Swift.Equatable {}
 extension SomaLoopSDK.ChargingState : Swift.Hashable {}
 extension SomaLoopSDK.ChargingState : Swift.RawRepresentable {}
+extension SomaLoopSDK.BluetoothConfigurationError : Swift.Equatable {}
+extension SomaLoopSDK.BluetoothConfigurationError : Swift.Hashable {}
+extension SomaLoopSDK.BluetoothConfigurationError : Swift.RawRepresentable {}
 extension SomaLoopSDK.CaptureStopOutcome : Swift.Equatable {}
 extension SomaLoopSDK.CaptureStopOutcome : Swift.Hashable {}
 extension SomaLoopSDK.CaptureStopOutcome : Swift.RawRepresentable {}
@@ -1194,6 +1280,9 @@ extension SomaLoopSDK.CaptureHealthState : Swift.RawRepresentable {}
 extension SomaLoopSDK.ResearchStream : Swift.Equatable {}
 extension SomaLoopSDK.ResearchStream : Swift.Hashable {}
 extension SomaLoopSDK.ResearchStream : Swift.RawRepresentable {}
+extension SomaLoopSDK.FactoryResetStatus : Swift.Equatable {}
+extension SomaLoopSDK.FactoryResetStatus : Swift.Hashable {}
+extension SomaLoopSDK.FactoryResetStatus : Swift.RawRepresentable {}
 extension SomaLoopSDK.HapticStep : Swift.Equatable {}
 extension SomaLoopSDK.HapticStep : Swift.Hashable {}
 extension SomaLoopSDK.HapticStep : Swift.RawRepresentable {}

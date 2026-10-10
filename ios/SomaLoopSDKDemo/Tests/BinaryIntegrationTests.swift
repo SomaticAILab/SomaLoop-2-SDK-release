@@ -1,6 +1,16 @@
 import XCTest
 import SomaLoopSDK
 final class BinaryIntegrationTests:XCTestCase {
+    func testBluetoothConfigurationPublicSurfaceRejectsInvalidBeforeNativeInitialization()throws {
+        try BluetoothMode.foregroundOnly.validateConfiguration()
+        let root=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        XCTAssertThrowsError(try SomaLoopClient(storageRoot:root,bluetoothMode:.stateRestoration(identifier:" "))){
+            XCTAssertEqual($0 as? BluetoothConfigurationError,.invalidRestorationIdentifier)
+        }
+        // Compile the foreground initializer without starting native Bluetooth in a test.
+        let create:(URL)throws->SomaLoopClient = {try SomaLoopClient(storageRoot:$0,bluetoothMode:.foregroundOnly)}
+        _ = create
+    }
     func testDeviceNameBinaryReadAndWrite() async throws {
         let device=DiscoveredDevice(id:"synthetic-name",name:"Original",rssi:-40)
         let mac=try ReplayExchange(commandHex:"22000000000000000000000000000022",notificationHex:["22010203040506000000000000000037"])

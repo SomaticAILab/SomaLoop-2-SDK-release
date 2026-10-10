@@ -68,10 +68,11 @@ struct DemoActionState {
         if capturePending { return "采集正在运行或停止待确认，请先停止采集并完成设备关闭确认" }
         switch action {
         // Scanning/reconnecting is needed to finish an unconfirmed haptic stop.
-        case .scan, .connect: return nil
+        case .scan, .connect:
+            return [.disconnected,.scanning,.ready].contains(device.connection) ? nil : "设备正在连接或识别，请稍候"
         default: break
         }
-        if hapticPending { return "节拍停止待确认，请先停止节拍并确认手环已完全停止" }
+        if hapticPending { return "节拍停止未完成，请重试停止；断连时先重新连接" }
         guard device.connection == .ready else { return "设备未就绪（\(device.connection.rawValue)），请先连接设备" }
         guard let snapshot = device.capabilities else { return "正在读取当前设备能力，请稍候" }
         // Active measurement follows its connection-aware entry, independently of firmware admission.
