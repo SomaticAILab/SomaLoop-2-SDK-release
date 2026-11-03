@@ -37,7 +37,7 @@ Swift 使用 actor 和 `async/await`；Kotlin 主要使用 `suspend` 与 `Flow`�
 
 `DeviceInfoResult.batteryReading`、`DecodedPacket.measurementValues` 和 `ECGRecording.receptionSummary` 提供类型化值及接收统计；Swift 另有 `ECGRecording.frames`，Java 对应 `ApiViews` 静态方法。字段与单位见[数据语义](数据与时间语义.md)。
 
-从 0.1.13/build29 开始，新增 `DecodedPacket.kind` / `historyKind`、`measurements`、`alarmLabel` 与扫描候选视图。它们由 SDK 解释包分类、单位和文本，App 无需解析命令字、布局名或原始字节。当前为本地开发候选，正式分发与验证范围以对应发布报告为准。
+从 0.1.13/build29 开始，新增 `DecodedPacket.kind` / `historyKind`、`measurements`、`alarmLabel` 与扫描候选视图。它们由 SDK 解释包分类、单位和文本，App 无需解析命令字、布局名或原始字节。这些接口已包含在当前 0.1.16 / build 33 交付中；具体平台验证范围见随包发布报告。
 
 | 类型化视图 | 用法 |
 | --- | --- |

@@ -66,7 +66,7 @@ suspend fun connectSelected(client: SomaLoopClient, device: DiscoveredDevice) {
 
 事件处理应迅速完成，重计算移到其他工作队列。扫描列表按设备 `id` 更新，不能只靠广播名启用功能。示例片段中的调用异常还需纳入宿主统一错误处理。
 
-0.1.13/build29 新增 `device.discoveryKind` / `discoveryEvidence` 扩展属性：`candidate` 表示广播信息匹配，`unknown` 表示暂无依据；连接后再核对实际能力，不按候选标记直接启用功能。Java 对应 `PublicDataViewsKt.getDiscoveryKind(device)` / `getDiscoveryEvidence(device)`。本版本目前为本地开发候选，旧发布包不包含这些新增接口。
+0.1.13/build29 新增 `device.discoveryKind` / `discoveryEvidence` 扩展属性：`candidate` 表示广播信息匹配，`unknown` 表示暂无依据；连接后再核对实际能力，不按候选标记直接启用功能。Java 对应 `PublicDataViewsKt.getDiscoveryKind(device)` / `getDiscoveryEvidence(device)`。这些接口已包含在当前 0.1.16 / build 33 交付中；升级时保持 SDK、研究模块和 Demo 的版本一致。
 
 连接就绪并取得权限后，可从可见 Activity 调用 `SomaLoopCaptureService.startCapture(activity, CaptureMode.paired, 60.0)`；停止入口调用 `client.stopCapture()`。Activity 销毁只解除绑定，不在旋转屏幕时关闭服务持有的采集客户端。服务重建可能恢复本地未结束会话；用户强制停止应用后不承诺自动恢复。
 
