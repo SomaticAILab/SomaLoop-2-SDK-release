@@ -2,6 +2,8 @@
 
 SomaLoop 2 SDK 0.1.16 / build 33 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
 
+远程依赖的固定入口与锁定方式见[远程依赖接入](远程依赖接入.md)。随包本地方式仍可使用。
+
 ## 安装与构建
 
 随包 `android/SomaLoopSDKDemo` 通过相邻的 `repository` 使用本地 Maven 包；其他宿主按自己的目录调整路径。

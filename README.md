@@ -8,10 +8,12 @@ SomaLoop 2 SDK 提供可穿戴设备的 iOS / Android 原生接入，提供二�
 
 ## 接入
 
+远程安装、版本锁定及实际验证范围见[远程依赖接入](docs/远程依赖接入.md)。
+
 | 平台 | 安装方式 | 文档 |
 | --- | --- | --- |
-| iOS 15+ | Xcode 添加随包的本地 Swift Package，引用 XCFramework | [iOS 接入](docs/iOS接入.md) |
-| Android API 26+ | Gradle 引用随包的本地 Maven 仓库 | [Android / Java 接入](docs/Android接入.md) |
+| iOS 15+ | SPM 按仓库 URL + revision 锁定；也可用随包 Package | [iOS 接入](docs/iOS接入.md) |
+| Android API 26+ | Gradle 引用固定 tag 的远程 Maven；也可用随包仓库 | [Android / Java 接入](docs/Android接入.md) |
 
 `ios/` 和 `android/` 各含 Demo。主库、可选研究库及 Demo 使用同一构建；手机安装时配置签名和系统权限。
 

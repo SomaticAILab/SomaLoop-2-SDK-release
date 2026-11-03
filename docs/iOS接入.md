@@ -2,6 +2,8 @@
 
 SomaLoop 2 SDK 0.1.16 / build 33 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
 
+远程依赖的固定入口与锁定方式见[远程依赖接入](远程依赖接入.md)。随包本地方式仍可使用。
+
 ## 安装
 
 1. 保持交付包 `ios/SomaLoopSDK-Package` 完整，在 Xcode 的 **Add Package Dependencies → Add Local** 中选中该目录，添加 `SomaLoopSDK` 产品；需要研究入口时另加 `SomaLoopExperimental`。
