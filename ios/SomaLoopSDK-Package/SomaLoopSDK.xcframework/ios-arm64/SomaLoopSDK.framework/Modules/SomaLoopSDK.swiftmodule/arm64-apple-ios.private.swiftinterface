@@ -2,6 +2,7 @@
 // swift-compiler-version: Apple Swift version 6.1.2 effective-5.10 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)
 // swift-module-flags: -target arm64-apple-ios15.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name SomaLoopSDK
 // swift-module-flags-ignorable: -no-verify-emitted-module-interface -interface-compiler-version 6.1.2
+import Compression
 import CoreBluetooth
 import CryptoKit
 import Darwin
@@ -158,6 +159,77 @@ public enum BluetoothConfigurationError : Swift.String, Swift.Error, Foundation.
   public init?(rawValue: Swift.String)
   public typealias RawValue = Swift.String
   public var rawValue: Swift.String {
+    get
+  }
+}
+public enum CaptureRecoveryPhase : Swift.String, Swift.Codable, Swift.Sendable {
+  case idle, connecting, starting, observing, receiving, reconnecting, quiescing, stopping, exporting, retiring, rebuilding, cooldown, paused, completed, needsAttention
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public enum CaptureRecoveryFailure : Swift.String, Swift.Codable, Swift.Sendable {
+  case transient, busy, environment, storage, unsupported, indeterminate
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public struct CaptureRecoveryConfiguration : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public var stallSeconds: Swift.Double, internalRecoveryGraceSeconds: Swift.Double
+  public var initialRetrySeconds: Swift.Double, maximumRetrySeconds: Swift.Double
+  public var busyRetrySeconds: Swift.Double, maximumBusyAttempts: Swift.Int, maximumConnectionAttempts: Swift.Int
+  public var minimumRebuildInterval: Swift.Double, rebuildWindowSeconds: Swift.Double, maximumRebuilds: Swift.Int
+  public var operationTimeoutSeconds: Swift.Double, rebuildTimeoutSeconds: Swift.Double
+  public var stableFrameCount: Swift.Int, stableSeconds: Swift.Double, suspensionGapSeconds: Swift.Double
+  public init()
+  public static func == (a: SomaLoopSDK.CaptureRecoveryConfiguration, b: SomaLoopSDK.CaptureRecoveryConfiguration) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct CaptureRecoverySnapshot : Swift.Codable, Swift.Sendable {
+  public var phase: SomaLoopSDK.CaptureRecoveryPhase {
+    get
+  }
+  public var failure: SomaLoopSDK.CaptureRecoveryFailure?, diagnostic: Swift.String?
+  public var sessionID: Swift.String?, previousSessionID: Swift.String?, streamEpoch: Swift.String?
+  public var lastAcceptedFrameUptime: Swift.Double?, nextRetryUptime: Swift.Double?
+  public var attempts: Swift.Int, rebuildsInWindow: Swift.Int
+  public var requiresHostAction: Swift.Bool, operationStillActive: Swift.Bool, intentAuthorized: Swift.Bool
+  public var previousStopOutcome: SomaLoopSDK.CaptureStopOutcome?, exportDirectory: Swift.String?
+  public var captureHealth: SomaLoopSDK.CaptureHealth? {
+    get
+  }
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct CaptureProtocolDiagnostics : Swift.Codable, Swift.Sendable {
+  public let connectionEpoch: Swift.String, streamEpoch: Swift.String, requestQuarantined: Swift.Bool, nativeWritesInFlight: Swift.Int
+  public let pendingCommandHex: Swift.String?, lastTimedOutCommandHex: Swift.String?, operation: Swift.String?
+  public let internalRecoveryActive: Swift.Bool, requiresReopen: Swift.Bool, exclusions: [Swift.String : Swift.Int]
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public enum CaptureRecoveryEvent : Swift.Sendable {
+  case state(SomaLoopSDK.CaptureRecoverySnapshot)
+  case data(SomaLoopSDK.SDKEvent)
+}
+@_hasMissingDesignatedInitializers public actor CaptureRecoverySupervisor {
+  public init(storageRoot: Foundation.URL, exportRoot: Foundation.URL, bluetoothMode: SomaLoopSDK.BluetoothMode, configuration: SomaLoopSDK.CaptureRecoveryConfiguration = .init(), firmwarePolicy: SomaLoopSDK.FirmwareAdmissionPolicy = .standard) throws
+  public func events() -> _Concurrency.AsyncStream<SomaLoopSDK.CaptureRecoveryEvent>
+  public func status() -> SomaLoopSDK.CaptureRecoverySnapshot
+  public func begin(device: SomaLoopSDK.DiscoveredDevice, mode: SomaLoopSDK.CaptureMode, durationSeconds: Swift.Double) throws
+  public func pauseOrStop()
+  public func retryAfterEnvironmentChange()
+  public func evaluate() async
+  public func updateFirmware(using updater: SomaLoopSDK.FirmwareUpdater, from source: SomaLoopSDK.FirmwareReleaseSource) async throws -> SomaLoopSDK.FirmwareUpdateResult
+  public func close() throws
+  @objc deinit
+  @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+  @_semantics("defaultActor") nonisolated final public var unownedExecutor: _Concurrency.UnownedSerialExecutor {
     get
   }
 }
@@ -366,6 +438,148 @@ public struct FactoryResetAttempt : Swift.Codable, Swift.Sendable {
   }
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
+}
+public enum FirmwareProtocolContract : Swift.String, Swift.Codable, Swift.Sendable {
+  case reference0088, firmware0128, unmapped
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+extension SomaLoopSDK.DeviceProfile {
+  public var protocolContract: SomaLoopSDK.FirmwareProtocolContract {
+    get
+  }
+}
+public struct DeviceHRVMetrics : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let meanRRMilliseconds: Swift.Double, sdnnMilliseconds: Swift.Double, rmssdMilliseconds: Swift.Double, lnRMSSD: Swift.Double, pnn50Percent: Swift.Double
+  public let totalPowerMillisecondsSquared: Swift.Double, lfPowerMillisecondsSquared: Swift.Double, lfPeakHertz: Swift.Double, hfPowerMillisecondsSquared: Swift.Double, hfPeakHertz: Swift.Double, lfHFRatio: Swift.Double
+  public static func == (a: SomaLoopSDK.DeviceHRVMetrics, b: SomaLoopSDK.DeviceHRVMetrics) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct DeviceHRVResult : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let status: Swift.Int, metrics: SomaLoopSDK.DeviceHRVMetrics?, rawHex: Swift.String, quality: Swift.String
+  public var source: Swift.String {
+    get
+  }
+  public init(frame: Foundation.Data, device: SomaLoopSDK.DeviceProfile) throws
+  public init(packet: SomaLoopSDK.DecodedPacket, device: SomaLoopSDK.DeviceProfile) throws
+  public static func == (a: SomaLoopSDK.DeviceHRVResult, b: SomaLoopSDK.DeviceHRVResult) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct HeartRateStateSlot : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let index: Swift.Int, heartRateRaw: Swift.Int, rawHex: Swift.String
+  public var heartRateBPM: Swift.Int? {
+    get
+  }
+  public var quality: Swift.String {
+    get
+  }
+  public static func == (a: SomaLoopSDK.HeartRateStateSlot, b: SomaLoopSDK.HeartRateStateSlot) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct HeartRateStateHistory : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let recordID: Swift.Int, deviceCalendar: SomaLoopSDK.DeviceCalendar?, slots: [SomaLoopSDK.HeartRateStateSlot], rawHex: Swift.String
+  public var sampleIntervalSeconds: Swift.Double? {
+    get
+  }
+  public var timeMeaning: Swift.String {
+    get
+  }
+  public init(packet: SomaLoopSDK.DecodedPacket, generationDevice: SomaLoopSDK.DeviceProfile) throws
+  public static func == (a: SomaLoopSDK.HeartRateStateHistory, b: SomaLoopSDK.HeartRateStateHistory) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct FirmwareReleaseSource : Swift.Sendable {
+  public let catalogURL: Foundation.URL, catalogSHA256: Swift.String
+  public init(catalogURL: Foundation.URL, catalogSHA256: Swift.String)
+}
+public struct FirmwareRelease : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let schemaVersion: Swift.Int
+  public let releaseID: Swift.String, firmwareHex: Swift.String, dateHex: Swift.String
+  public let packageURL: Foundation.URL, packageSHA256: Swift.String, packageBytes: Swift.Int
+  public let applicationSHA256: Swift.String, initPacketSHA256: Swift.String
+  public let hardwareVersion: Swift.UInt32, softdeviceRequirements: [Swift.UInt32]
+  public let sourceProfiles: [Swift.String]
+  public let minimumBatteryPercent: Swift.Int
+  public init(schemaVersion: Swift.Int = 1, releaseID: Swift.String, firmwareHex: Swift.String, dateHex: Swift.String, packageURL: Foundation.URL, packageSHA256: Swift.String, packageBytes: Swift.Int, applicationSHA256: Swift.String, initPacketSHA256: Swift.String, hardwareVersion: Swift.UInt32, softdeviceRequirements: [Swift.UInt32], sourceProfiles: [Swift.String], minimumBatteryPercent: Swift.Int = 30)
+  public static func == (a: SomaLoopSDK.FirmwareRelease, b: SomaLoopSDK.FirmwareRelease) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public enum FirmwareUpdatePhase : Swift.String, Swift.Codable, Swift.Sendable {
+  case idle, downloading, validating, preservingCapture, preflight, enteringBootloader
+  case locatingBootloader, transferringInit, transferringApplication, verifyingApplication
+  case completed, cancelled, needsAttention
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public enum FirmwareUpdateError : Swift.String, Swift.Error, Swift.Codable, Swift.Sendable {
+  case busy, invalidRelease, untrustedCatalog, downloadFailed, invalidPackage, packageHashMismatch
+  case unsupportedDevice, lowBattery, captureNotPreserved, identityMismatch, bootloaderSelectionRequired
+  case bluetoothUnavailable, disconnected, timeout, malformedResponse, remoteRejected, crcMismatch
+  case cancelled, verificationFailed, storageFailure, retirementUnconfirmed, invalidResume
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public struct FirmwareBootloader : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let id: Swift.String, name: Swift.String?, rssi: Swift.Int
+  public init(id: Swift.String, name: Swift.String?, rssi: Swift.Int)
+  public static func == (a: SomaLoopSDK.FirmwareBootloader, b: SomaLoopSDK.FirmwareBootloader) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct FirmwareUpdateSnapshot : Swift.Codable, Swift.Sendable {
+  public var phase: SomaLoopSDK.FirmwareUpdatePhase {
+    get
+  }
+  public var releaseID: Swift.String?, deviceMAC: Swift.String?, exportDirectory: Swift.String?
+  public var confirmedBytes: Swift.Int, totalBytes: Swift.Int
+  public var error: SomaLoopSDK.FirmwareUpdateError? {
+    get
+  }
+  public var mayBeInBootloader: Swift.Bool {
+    get
+  }
+  public var bootloaders: [SomaLoopSDK.FirmwareBootloader] {
+    get
+  }
+  public var operationActive: Swift.Bool {
+    get
+  }
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct FirmwareUpdateResult : Swift.Codable, Swift.Sendable {
+  public let releaseID: Swift.String, device: SomaLoopSDK.DeviceProfile, exportDirectory: Swift.String?
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+@_hasMissingDesignatedInitializers public actor FirmwareUpdater {
+  public init(storageRoot: Foundation.URL, exportRoot: Foundation.URL, bluetoothMode: SomaLoopSDK.BluetoothMode = .foregroundOnly) throws
+  public func events() -> _Concurrency.AsyncStream<SomaLoopSDK.FirmwareUpdateSnapshot>
+  public func status() -> SomaLoopSDK.FirmwareUpdateSnapshot
+  public func cancel()
+  public func checkForUpdate(from source: SomaLoopSDK.FirmwareReleaseSource) async throws -> SomaLoopSDK.FirmwareRelease
+  public func update(client: SomaLoopSDK.SomaLoopClient, from source: SomaLoopSDK.FirmwareReleaseSource) async throws -> SomaLoopSDK.FirmwareUpdateResult
+  public func resume(from source: SomaLoopSDK.FirmwareReleaseSource, selectedBootloaderID: Swift.String? = nil) async throws -> SomaLoopSDK.FirmwareUpdateResult
+  public func close() async throws
+  @objc deinit
+  @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+  @_semantics("defaultActor") nonisolated final public var unownedExecutor: _Concurrency.UnownedSerialExecutor {
+    get
+  }
 }
 public enum HapticStep : Swift.String, Swift.Codable, Swift.Sendable {
   case short, long, rest
@@ -628,7 +842,7 @@ public struct DecodedPacket : Swift.Codable, Swift.Equatable, Swift.Sendable {
 }
 public enum HistoryKind : Swift.Int, Swift.Codable, Swift.CaseIterable, Swift.Sendable {
   case activity, steps, sleep, heartRate, singleHeartRate, hrv, alarms
-  case sleepDebug, systemEvents, sport, temperature, ppi, spo2, powerDebug, sleepActivity
+  case sleepDebug, systemEvents, sport, temperature, ppi, spo2, powerDebug, sleepActivity, heartRateStateSnapshots
   public var recordLength: Swift.Int {
     get
   }
@@ -901,10 +1115,51 @@ public struct PairedDebugParser {
   public var metadata: SomaLoopSDK.PairedMetadata {
     get
   }
+  public var timingContract: SomaLoopSDK.PairedTimingContract {
+    get
+  }
+  public var timingObservations: [SomaLoopSDK.PairedTimingObservation] {
+    get
+  }
   public init()
   public init(manifest: SomaLoopSDK.SessionManifest) throws
   public mutating func consume(_ record: SomaLoopSDK.JournalRecord) -> [SomaLoopSDK.PairedDecision]
   public mutating func finish() -> [SomaLoopSDK.PairedDecision]
+}
+public struct PairedTimingContract : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let revision: Swift.Int
+  public let pairedProfileID: Swift.String?
+  public let pairedProfileRevision: Swift.Int?
+  public let verificationStatus: Swift.String
+  public let timeFieldUnit: Swift.String
+  public let timeFieldMeaning: Swift.String
+  public let sampleIntervalSeconds: Swift.Double?
+  public let frameCountValueBits: Swift.Int
+  public let firmwareFrameCounterBits: Swift.Int?
+  public let crossFrameSampleContinuity: Swift.String
+  public let ppgMemsAlignment: Swift.String
+  public let timestampReconstruction: Swift.String
+  public static func forDevice(_ device: SomaLoopSDK.DeviceProfile) -> SomaLoopSDK.PairedTimingContract
+  public static func == (a: SomaLoopSDK.PairedTimingContract, b: SomaLoopSDK.PairedTimingContract) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct PairedTimingObservation : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let analysisEpoch: Swift.Int
+  public let segment: Swift.Int
+  public let frameCount: Swift.UInt32
+  public let boundaryReasons: [Swift.String]
+  public let continuityStatus: Swift.String
+  public let receiveStart: SomaLoopSDK.ReceiveBoundary
+  public let receiveEnd: SomaLoopSDK.ReceiveBoundary
+  public static func == (a: SomaLoopSDK.PairedTimingObservation, b: SomaLoopSDK.PairedTimingObservation) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct PairedTimingAnalyzer {
+  public init()
+  public mutating func reset(reason: Swift.String)
+  public mutating func accept(_ frame: SomaLoopSDK.PairedFrame) -> SomaLoopSDK.PairedTimingObservation
 }
 public struct PPGFrame : Swift.Codable, Swift.Equatable, Swift.Sendable {
   public let sequence: Swift.Int, bytesPerSample: Swift.Int, values: [Swift.UInt32]
@@ -1125,6 +1380,15 @@ public struct SomaBatchResult : Swift.Codable, Swift.Sendable {
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
 }
+public enum SomaBatchError : Swift.String, Swift.Error, Swift.Sendable {
+  case recordIdentityUnavailable, recordIdentityConflict, recordOrderConflict
+  case recordGroupLimitExceeded, requestBodyLimitExceeded
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
 public enum SomaContractRevision : Swift.String, Swift.Codable, Swift.CaseIterable, Swift.Sendable {
   case legacyV1
   case diagnosticHistoryV1
@@ -1143,6 +1407,7 @@ public enum SomaContractAdapter {
   public static let contractVersion: Swift.String
   public static let defaultContractRevision: SomaLoopSDK.SomaContractRevision
   public static let supportedContractRevisions: [SomaLoopSDK.SomaContractRevision]
+  public static let maximumBatchUTF8Bytes: Swift.Int
   public static func passport(_ profile: SomaLoopSDK.DeviceProfile, batteryPercent: Swift.Int? = nil) throws -> [Swift.String : SomaLoopSDK.ProtocolValue]
   public static func deviceClockOffsetMilliseconds(_ snapshot: SomaLoopSDK.ClockSnapshot) -> Swift.Int64?
   public static func history(_ record: SomaLoopSDK.HistoryRecord, deviceID: Swift.String, timeContract: SomaLoopSDK.HistoryTimeContract? = nil, hrvMillisecondEvidence: Swift.String? = nil, sleepProfile: SomaLoopSDK.DeviceProfile? = nil) throws -> SomaLoopSDK.SomaAdaptationResult
@@ -1150,8 +1415,11 @@ public enum SomaContractAdapter {
   public static func history(_ records: [SomaLoopSDK.HistoryRecord], deviceID: Swift.String, timeContracts: [SomaLoopSDK.HistoryKind : SomaLoopSDK.HistoryTimeContract] = [:], hrvMillisecondEvidence: Swift.String? = nil, sleepProfile: SomaLoopSDK.DeviceProfile? = nil) throws -> SomaLoopSDK.SomaAdaptationResult
   public static func historyForContract(_ records: [SomaLoopSDK.HistoryRecord], deviceID: Swift.String, contractRevision: SomaLoopSDK.SomaContractRevision, timeContracts: [SomaLoopSDK.HistoryKind : SomaLoopSDK.HistoryTimeContract] = [:], hrvMillisecondEvidence: Swift.String? = nil, sleepProfile: SomaLoopSDK.DeviceProfile? = nil) throws -> SomaLoopSDK.SomaAdaptationResult
   public static func historyWithDeviceTiming(_ record: SomaLoopSDK.HistoryRecord, deviceID: Swift.String, generationProfile: SomaLoopSDK.DeviceProfile, utcOffsetMinutes: Swift.Int) throws -> SomaLoopSDK.SomaAdaptationResult
+  public static func historyWithDeviceTiming(_ record: SomaLoopSDK.HistoryRecord, deviceID: Swift.String, generationProfile: SomaLoopSDK.DeviceProfile, utcOffsetMinutes: Swift.Int, contractRevision: SomaLoopSDK.SomaContractRevision) throws -> SomaLoopSDK.SomaAdaptationResult
   public static func historyWithDeviceTiming(_ records: [SomaLoopSDK.HistoryRecord], deviceID: Swift.String, generationProfile: SomaLoopSDK.DeviceProfile, utcOffsetMinutes: Swift.Int) throws -> SomaLoopSDK.SomaAdaptationResult
+  public static func historyWithDeviceTiming(_ records: [SomaLoopSDK.HistoryRecord], deviceID: Swift.String, generationProfile: SomaLoopSDK.DeviceProfile, utcOffsetMinutes: Swift.Int, contractRevision: SomaLoopSDK.SomaContractRevision) throws -> SomaLoopSDK.SomaAdaptationResult
   public static func batchResult(_ adaptation: SomaLoopSDK.SomaAdaptationResult, installationID: Swift.String, deviceID: Swift.String, profile: SomaLoopSDK.DeviceProfile, tz: Swift.String, uploadedAt: Foundation.Date = Date(), clock: SomaLoopSDK.ClockSnapshot? = nil, clockUnavailableReason: Swift.String? = nil, batteryPercent: Swift.Int? = nil, clockEpoch: Swift.String? = nil) throws -> SomaLoopSDK.SomaBatchResult
+  public static func encodeBatch(_ batch: [Swift.String : SomaLoopSDK.ProtocolValue]) throws -> Foundation.Data
   public static func batches(_ adaptation: SomaLoopSDK.SomaAdaptationResult, installationID: Swift.String, deviceID: Swift.String, profile: SomaLoopSDK.DeviceProfile, tz: Swift.String, uploadedAt: Foundation.Date = Date(), clock: SomaLoopSDK.ClockSnapshot? = nil, clockUnavailableReason: Swift.String? = nil, batteryPercent: Swift.Int? = nil, clockEpoch: Swift.String? = nil) throws -> [[Swift.String : SomaLoopSDK.ProtocolValue]]
 }
 @_hasMissingDesignatedInitializers public actor SomaLoopClient {
@@ -1183,6 +1451,9 @@ public enum SomaContractAdapter {
     get
   }
   public var profile: SomaLoopSDK.DeviceProfile? {
+    get
+  }
+  public var lastWearCheckDiagnostics: SomaLoopSDK.WearCheckDiagnostics? {
     get
   }
   nonisolated public var bluetoothConfigurationError: SomaLoopSDK.BluetoothConfigurationError? {
@@ -1252,12 +1523,89 @@ public enum SomaContractAdapter {
   @_spi(Research) public func beginResearch(_ stream: SomaLoopSDK.ResearchStream, durationSeconds: Swift.Int = 60) async throws
   @_spi(Research) public func endResearch() async
   @_spi(Research) public func recordResearchECG(seconds: Swift.Int = 60) async throws -> SomaLoopSDK.ECGRecording
+  public func captureProtocolDiagnostics() async -> SomaLoopSDK.CaptureProtocolDiagnostics
   public func shutdown() async
   @objc deinit
   @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
   @_semantics("defaultActor") nonisolated final public var unownedExecutor: _Concurrency.UnownedSerialExecutor {
     get
   }
+}
+public enum WearCheckCommandPhase : Swift.String, Swift.Codable, Swift.Sendable {
+  case debugStart, ppgStart, debugStop, ppgStop, ppgExit
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public enum WearCheckCommandOutcome : Swift.String, Swift.Codable, Swift.Sendable {
+  case pending, writeCompleted, acknowledged, timedOut, cancelled, failed
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public enum WearCheckFailureStage : Swift.String, Swift.Codable, Swift.Sendable {
+  case beforeWrite, write, acknowledgement
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public struct WearCheckCommandDiagnostic : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let phase: SomaLoopSDK.WearCheckCommandPhase, commandHex: Swift.String, acknowledgementExpected: Swift.Bool
+  public var writeStartedOffsetSeconds: Swift.Double? {
+    get
+  }
+  public var writeCompletedOffsetSeconds: Swift.Double? {
+    get
+  }
+  public var responseReceivedOffsetSeconds: Swift.Double? {
+    get
+  }
+  public var responseHex: Swift.String? {
+    get
+  }
+  public var outcome: SomaLoopSDK.WearCheckCommandOutcome {
+    get
+  }
+  public var failureStage: SomaLoopSDK.WearCheckFailureStage? {
+    get
+  }
+  public var error: SomaLoopSDK.SDKError? {
+    get
+  }
+  public static func == (a: SomaLoopSDK.WearCheckCommandDiagnostic, b: SomaLoopSDK.WearCheckCommandDiagnostic) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct WearCheckDiagnostics : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let id: Swift.String, deviceTag: Swift.String, firmwareHex: Swift.String, dateHex: Swift.String
+  public let sdkVersion: Swift.String, buildRevision: Swift.String, startedAt: Swift.Double
+  public var endedAt: Swift.Double? {
+    get
+  }
+  public var durationSeconds: Swift.Double? {
+    get
+  }
+  public var commands: [SomaLoopSDK.WearCheckCommandDiagnostic] {
+    get
+  }
+  public var observationError: SomaLoopSDK.SDKError? {
+    get
+  }
+  public var stopConfirmed: Swift.Bool? {
+    get
+  }
+  public var disconnectReason: Swift.String? {
+    get
+  }
+  public static func == (a: SomaLoopSDK.WearCheckDiagnostics, b: SomaLoopSDK.WearCheckDiagnostics) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
 }
 extension SomaLoopSDK.HistoryKind : Swift.Equatable {}
 extension SomaLoopSDK.HistoryKind : Swift.Hashable {}
@@ -1271,6 +1619,12 @@ extension SomaLoopSDK.ChargingState : Swift.RawRepresentable {}
 extension SomaLoopSDK.BluetoothConfigurationError : Swift.Equatable {}
 extension SomaLoopSDK.BluetoothConfigurationError : Swift.Hashable {}
 extension SomaLoopSDK.BluetoothConfigurationError : Swift.RawRepresentable {}
+extension SomaLoopSDK.CaptureRecoveryPhase : Swift.Equatable {}
+extension SomaLoopSDK.CaptureRecoveryPhase : Swift.Hashable {}
+extension SomaLoopSDK.CaptureRecoveryPhase : Swift.RawRepresentable {}
+extension SomaLoopSDK.CaptureRecoveryFailure : Swift.Equatable {}
+extension SomaLoopSDK.CaptureRecoveryFailure : Swift.Hashable {}
+extension SomaLoopSDK.CaptureRecoveryFailure : Swift.RawRepresentable {}
 extension SomaLoopSDK.CaptureStopOutcome : Swift.Equatable {}
 extension SomaLoopSDK.CaptureStopOutcome : Swift.Hashable {}
 extension SomaLoopSDK.CaptureStopOutcome : Swift.RawRepresentable {}
@@ -1283,6 +1637,16 @@ extension SomaLoopSDK.ResearchStream : Swift.RawRepresentable {}
 extension SomaLoopSDK.FactoryResetStatus : Swift.Equatable {}
 extension SomaLoopSDK.FactoryResetStatus : Swift.Hashable {}
 extension SomaLoopSDK.FactoryResetStatus : Swift.RawRepresentable {}
+extension SomaLoopSDK.FirmwareProtocolContract : Swift.Equatable {}
+extension SomaLoopSDK.FirmwareProtocolContract : Swift.Hashable {}
+extension SomaLoopSDK.FirmwareProtocolContract : Swift.RawRepresentable {}
+extension SomaLoopSDK.FirmwareUpdatePhase : Swift.Equatable {}
+extension SomaLoopSDK.FirmwareUpdatePhase : Swift.Hashable {}
+extension SomaLoopSDK.FirmwareUpdatePhase : Swift.RawRepresentable {}
+extension SomaLoopSDK.FirmwareUpdateError : Swift.Equatable {}
+extension SomaLoopSDK.FirmwareUpdateError : Swift.Hashable {}
+extension SomaLoopSDK.FirmwareUpdateError : Swift.RawRepresentable {}
+extension SomaLoopSDK.SomaLoopClient : Swift.Sendable {}
 extension SomaLoopSDK.HapticStep : Swift.Equatable {}
 extension SomaLoopSDK.HapticStep : Swift.Hashable {}
 extension SomaLoopSDK.HapticStep : Swift.RawRepresentable {}
@@ -1323,6 +1687,18 @@ extension SomaLoopSDK.WearStatus : Swift.RawRepresentable {}
 extension SomaLoopSDK.SleepTimelineStatus : Swift.Equatable {}
 extension SomaLoopSDK.SleepTimelineStatus : Swift.Hashable {}
 extension SomaLoopSDK.SleepTimelineStatus : Swift.RawRepresentable {}
+extension SomaLoopSDK.SomaBatchError : Swift.Equatable {}
+extension SomaLoopSDK.SomaBatchError : Swift.Hashable {}
+extension SomaLoopSDK.SomaBatchError : Swift.RawRepresentable {}
 extension SomaLoopSDK.SomaContractRevision : Swift.Equatable {}
 extension SomaLoopSDK.SomaContractRevision : Swift.Hashable {}
 extension SomaLoopSDK.SomaContractRevision : Swift.RawRepresentable {}
+extension SomaLoopSDK.WearCheckCommandPhase : Swift.Equatable {}
+extension SomaLoopSDK.WearCheckCommandPhase : Swift.Hashable {}
+extension SomaLoopSDK.WearCheckCommandPhase : Swift.RawRepresentable {}
+extension SomaLoopSDK.WearCheckCommandOutcome : Swift.Equatable {}
+extension SomaLoopSDK.WearCheckCommandOutcome : Swift.Hashable {}
+extension SomaLoopSDK.WearCheckCommandOutcome : Swift.RawRepresentable {}
+extension SomaLoopSDK.WearCheckFailureStage : Swift.Equatable {}
+extension SomaLoopSDK.WearCheckFailureStage : Swift.Hashable {}
+extension SomaLoopSDK.WearCheckFailureStage : Swift.RawRepresentable {}

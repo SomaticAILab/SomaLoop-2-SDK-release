@@ -1,8 +1,6 @@
 # Android / Java 接入
 
-SomaLoop 2 SDK 0.1.16 / build 33 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
-
-远程依赖的固定入口与锁定方式见[远程依赖接入](远程依赖接入.md)。随包本地方式仍可使用。
+SomaLoop 2 SDK 0.2.0 / build 40 支持 Android API 26 及以上，包名为 `com.somaticai.somaloop`。
 
 ## 安装与构建
 
@@ -20,8 +18,8 @@ dependencyResolutionManagement {
 
 // app/build.gradle.kts
 dependencies {
-    implementation("com.somaticai.somaloop:sdk:0.1.16")
-    implementation("com.somaticai.somaloop:experimental:0.1.16") // 研究入口，可选
+    implementation("com.somaticai.somaloop:sdk:0.2.0")
+    implementation("com.somaticai.somaloop:experimental:0.2.0") // 研究入口，可选
 }
 ```
 
@@ -68,7 +66,7 @@ suspend fun connectSelected(client: SomaLoopClient, device: DiscoveredDevice) {
 
 事件处理应迅速完成，重计算移到其他工作队列。扫描列表按设备 `id` 更新，不能只靠广播名启用功能。示例片段中的调用异常还需纳入宿主统一错误处理。
 
-0.1.13/build29 新增 `device.discoveryKind` / `discoveryEvidence` 扩展属性：`candidate` 表示广播信息匹配，`unknown` 表示暂无依据；连接后再核对实际能力，不按候选标记直接启用功能。Java 对应 `PublicDataViewsKt.getDiscoveryKind(device)` / `getDiscoveryEvidence(device)`。这些接口已包含在当前 0.1.16 / build 33 交付中；升级时保持 SDK、研究模块和 Demo 的版本一致。
+`device.discoveryKind` / `discoveryEvidence` 扩展属性已包含在 0.1.16 / build 33 发布包中：`candidate` 表示广播信息匹配，`unknown` 表示暂无依据；连接后再核对实际能力，不按候选标记直接启用功能。Java 对应 `PublicDataViewsKt.getDiscoveryKind(device)` / `getDiscoveryEvidence(device)`。从 0.1.15 / build 32 起，匹配已支持的出厂广播前缀、但未广播服务 UUID 的设备也会被标为候选。
 
 连接就绪并取得权限后，可从可见 Activity 调用 `SomaLoopCaptureService.startCapture(activity, CaptureMode.paired, 60.0)`；停止入口调用 `client.stopCapture()`。Activity 销毁只解除绑定，不在旋转屏幕时关闭服务持有的采集客户端。服务重建可能恢复本地未结束会话；用户强制停止应用后不承诺自动恢复。
 
@@ -169,7 +167,7 @@ Java 对应入口为 `SomaLoopJava.readBattery(callback)`、`readWearState(5.0, 
 
 Kotlin / Java 使用 `PPIHRV.fromBatch(ppiBatch)` 从一次完整的 PPI 历史读取返回数值或 null／原因。有效 `rmssdMilliseconds` 可映射到 `hrv_rmssd`；缺失时跳过评分和提醒更新。默认策略、分组边界与质量存储见[数据与时间语义](数据与时间语义.md)。使用本版本完整二进制包，并重新编译应用。
 
-`readWearState` 仅支持 `00000808-260604`，观察时长 1–10 秒；`rawACC` 持久采集仅在该固件为默认可用，其他固件的实验能力状态不等于 `startCapture` 已放行。`durationSeconds` 必须有限、>0 且 ≤604800，省略为 86400。
+本版本的 `readWearState` 支持精确配置 `00000808-260604` 和 `00010208-261016`，观察时长 1–10 秒；0.1.16 及更早版本不包含新增配置。`rawACC` 持久采集仍仅在 `00000808-260604` 默认可用，其他固件的实验能力状态不等于 `startCapture` 已放行。`durationSeconds` 必须有限、>0 且 ≤604800，省略为 86400。
 
 `stopCaptureWithResult` 的 `acknowledged`、`quiescent` 均释放本地会话；`unconfirmed` 保留待清理，最多两次停止尝试。只在 `acknowledged` 时 `stopConfirmed=true`。需要人工结束本地待处理时，按[采集与马达节拍](采集与马达节拍.md)调用 `abandonPendingCapture`；不要删除会话目录。
 

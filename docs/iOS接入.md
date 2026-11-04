@@ -1,8 +1,6 @@
 # iOS 接入
 
-SomaLoop 2 SDK 0.1.16 / build 33 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
-
-远程依赖的固定入口与锁定方式见[远程依赖接入](远程依赖接入.md)。随包本地方式仍可使用。
+SomaLoop 2 SDK 0.2.0 / build 40 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
 
 ## 安装
 
@@ -210,7 +208,7 @@ print(export)
 
 `let results = try PPIHRV.fromBatch(ppiBatch)` 从一次完整的 PPI 历史读取返回数值或 null／原因。有效 `rmssdMilliseconds` 可映射到 `hrv_rmssd`；缺失时跳过评分和提醒更新。默认策略、分组边界与质量存储见[数据与时间语义](数据与时间语义.md)。使用本版本完整二进制包，并重新编译应用。
 
-`readWearState` 仅支持 `00000808-260604`，观察时长 1–10 秒；`rawACC` 持久采集仅在该固件为默认可用，其他固件的实验能力状态不等于 `startCapture` 已放行。`durationSeconds` 必须有限、>0 且 ≤604800，省略为 86400。
+本版本的 `readWearState` 支持精确配置 `00000808-260604` 和 `00010208-261016`，观察时长 1–10 秒；0.1.16 及更早版本不包含新增配置。`rawACC` 持久采集仍仅在 `00000808-260604` 默认可用，其他固件的实验能力状态不等于 `startCapture` 已放行。`durationSeconds` 必须有限、>0 且 ≤604800，省略为 86400。
 
 `stopCaptureWithResult` 的 `acknowledged`、`quiescent` 均释放本地会话；`unconfirmed` 保留待清理，最多两次停止尝试。只在 `acknowledged` 时 `stopConfirmed=true`。需要人工结束本地待处理时，按[采集与马达节拍](采集与马达节拍.md)调用 `abandonPendingCapture`；不要删除会话目录。
 

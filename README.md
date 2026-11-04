@@ -2,18 +2,18 @@
 
 SomaLoop 2 SDK 提供可穿戴设备的 iOS / Android 原生接入，提供二进制库、Swift / Kotlin / Java 示例及接入文档。
 
-版本：**0.1.16 / build 33**。支持有效四字节 BCD 固件 **≥0.0.8.8（含）**，不设上限。公开模块为 `SomaLoopSDK`、`SomaLoopExperimental`，Android 包名为 `com.somaticai.somaloop`。
+版本：**0.2.0 / build 40**。支持有效四字节 BCD 固件 **≥0.0.8.8（含）**，不设上限。公开模块为 `SomaLoopSDK`、`SomaLoopExperimental`，Android 包名为 `com.somaticai.somaloop`。
 
 公开提供下载，按 [SDK 评估许可](LICENSE) 用于内部评估；商业使用或再分发需另行授权。
 
 ## 接入
 
-远程安装、版本锁定及实际验证范围见[远程依赖接入](docs/远程依赖接入.md)。
+远程仓库接入、版本锁定及随包本地方式见[远程依赖接入](docs/远程依赖接入.md)。
 
 | 平台 | 安装方式 | 文档 |
 | --- | --- | --- |
-| iOS 15+ | SPM 按仓库 URL + revision 锁定；也可用随包 Package | [iOS 接入](docs/iOS接入.md) |
-| Android API 26+ | Gradle 引用固定 tag 的远程 Maven；也可用随包仓库 | [Android / Java 接入](docs/Android接入.md) |
+| iOS 15+ | Xcode 添加随包的本地 Swift Package，引用 XCFramework | [iOS 接入](docs/iOS接入.md) |
+| Android API 26+ | Gradle 引用随包的本地 Maven 仓库 | [Android / Java 接入](docs/Android接入.md) |
 
 `ios/` 和 `android/` 各含 Demo。主库、可选研究库及 Demo 使用同一构建；手机安装时配置签名和系统权限。
 
@@ -31,7 +31,9 @@ SomaLoop 2 SDK 提供可穿戴设备的 iOS / Android 原生接入，提供二�
 | 本地数据 | 会话持久化、恢复、导出和诊断摘要 |
 | 实验性历史清除 | 准备和执行各显式启用实验功能，执行另需确认 |
 
-15 类历史（包含 alarms）及独立闹钟设置读取默认可用。联合采集、校时和历史时间规则仅使用 0.0.8.8／固件日期 260604 配置；raw ACC 在 00000808-260604 为 C，其他准入固件为 E（`experimental`），实时诊断为 U（`untested`）。具体准入通过能力快照查询。每日步数目标由 App／服务端维护。
+15 类历史（包含 alarms）及独立闹钟设置读取默认可用。本版本的联合采集、主动佩戴检查支持精确配置 `00000808-260604` 和 `00010208-261016`；设备校时与内建睡眠／连续心率时间规则仍仅适用于前者。raw ACC 在 `00000808-260604` 为 C，其他准入固件为 E（`experimental`），实时诊断为 U（`untested`）。新固件的 `heartRateStateSnapshots` 历史另需显式实验启用，不计入默认 15 类。具体准入通过能力快照查询。每日步数目标由 App／服务端维护。
+
+本包的实际二进制身份和软件验证见 `build-identity.json` 与 `release-report.json`；设备实测和剩余限制见[功能支持范围](docs/验收状态.md)。0128 实测仍存在原始采集期间连续心率历史缺口、独立 PPG 序号缺口和链路中断，采样时钟未确认。
 
 ## 使用流程
 

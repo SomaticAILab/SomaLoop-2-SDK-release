@@ -2,11 +2,49 @@
 // swift-compiler-version: Apple Swift version 6.1.2 effective-5.10 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)
 // swift-module-flags: -target arm64-apple-ios15.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name SomaLoopExperimental
 // swift-module-flags-ignorable: -no-verify-emitted-module-interface -interface-compiler-version 6.1.2
+import Foundation
 @_spi(Research) import SomaLoopSDK
 import Swift
 import _Concurrency
 import _StringProcessing
 import _SwiftConcurrencyShims
+public struct RRIReceiveBoundary : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let unixMilliseconds: Swift.Double, uptimeSeconds: Swift.Double
+  public let fileID: Swift.String?, fileRecord: Swift.Int?
+  public static func == (a: SomaLoopExperimental.RRIReceiveBoundary, b: SomaLoopExperimental.RRIReceiveBoundary) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct FirmwareRRIObservation : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let modeRaw: Swift.UInt32, intervalRaw: Swift.Int32, confidenceRaw: Swift.Int32, timePointRaw: Swift.Int32
+  public let rawLine: Swift.String, firmwareHex: Swift.String, dateHex: Swift.String
+  public let firstReceive: SomaLoopExperimental.RRIReceiveBoundary, lastReceive: SomaLoopExperimental.RRIReceiveBoundary
+  public var quality: Swift.String {
+    get
+  }
+  public var intervalUnit: Swift.String {
+    get
+  }
+  public var timePointUnit: Swift.String {
+    get
+  }
+  public var timingVerified: Swift.Bool {
+    get
+  }
+  public static func == (a: SomaLoopExperimental.FirmwareRRIObservation, b: SomaLoopExperimental.FirmwareRRIObservation) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct FirmwareRRIParser : Swift.Sendable {
+  public let device: SomaLoopSDK.DeviceProfile
+  public init(device: SomaLoopSDK.DeviceProfile)
+  public var supportsFirmware: Swift.Bool {
+    get
+  }
+  public mutating func reset()
+  public mutating func consume(_ event: SomaLoopSDK.SDKEvent) -> [SomaLoopExperimental.FirmwareRRIObservation]
+  public mutating func consume(_ record: SomaLoopSDK.JournalRecord) -> [SomaLoopExperimental.FirmwareRRIObservation]
+}
 public struct SomaLoopResearch {
   public typealias Stream = SomaLoopSDK.ResearchStream
   public init(client: SomaLoopSDK.SomaLoopClient)

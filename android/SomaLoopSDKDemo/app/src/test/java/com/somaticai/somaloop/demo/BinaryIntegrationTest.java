@@ -7,6 +7,35 @@ import kotlinx.serialization.json.JsonObject;
 import kotlinx.serialization.json.JsonPrimitive;
 
 public final class BinaryIntegrationTest {
+    @Test public void firmware0128BinaryContract() {
+        DeviceProfile p = DeviceProfile.Companion.identify("test", "001122334455", "00010208", "261016", null);
+        assertEquals(FirmwareProtocolContract.firmware0128, FirmwareContractKt.getProtocolContract(p));
+        assertEquals(CapabilityState.unsupported, p.capability("deviceNameWrite"));
+        assertEquals(CapabilityState.compatibleCandidate, p.capability("ppgAccPaired"));
+        assertEquals(CapabilityState.experimental, p.historyCapability(HistoryKind.heartRateStateSnapshots));
+        byte[] bytes = new byte[48]; bytes[0] = (byte) 0x8d; bytes[1] = 1;
+        java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN).putFloat(2, 800.0f);
+        int checksum = 0; for (int i = 0; i < 47; i++) checksum += bytes[i] & 255;
+        bytes[47] = (byte) checksum;
+        DeviceHRVResult result = DeviceHRVResult.parse(bytes, p);
+        assertEquals(800.0, result.getMetrics().getMeanRRMilliseconds(), 0.0);
+        assertEquals("deviceComputedUnvalidated", result.getQuality());
+        bytes[1] = 0; bytes[47]--;
+        assertNull(DeviceHRVResult.parse(bytes, p).getMetrics());
+    }
+
+    @Test public void recoverySupervisorBinarySurface() throws Exception {
+        assertEquals(60.0, new CaptureRecoveryConfiguration().getStallSeconds(), 0.0);
+        CaptureRecoverySnapshot initial = new CaptureRecoverySnapshot();
+        assertFalse(initial.getIntentAuthorized()); assertFalse(initial.getOperationStillActive());
+        Class<?> continuation = kotlin.coroutines.Continuation.class;
+        assertNotNull(CaptureRecoverySupervisor.class.getConstructor(android.content.Context.class, java.io.File.class, java.io.File.class));
+        assertNotNull(CaptureRecoverySupervisor.class.getMethod("begin", DiscoveredDevice.class, CaptureMode.class, double.class, continuation));
+        assertNotNull(CaptureRecoverySupervisor.class.getMethod("pauseOrStop", continuation));
+        assertNotNull(CaptureRecoverySupervisor.class.getMethod("status", continuation));
+        assertNotNull(SomaLoopClient.class.getMethod("captureProtocolDiagnostics", continuation));
+    }
+
     @Test public void deviceNameReadWriteBinarySurface() throws Exception {
         DeviceNameReading reading = new DeviceNameReading("Original", "raw");
         DeviceNameChangeReceipt receipt = new DeviceNameChangeReceipt("TBSoma", "response");
@@ -73,6 +102,11 @@ public final class BinaryIntegrationTest {
         assertEquals(CapabilityState.untested, p.capability("diagnostics"));
         assertEquals(CapabilityState.compatibleCandidate, p.historyCapability(HistoryKind.sleep));
         for (HistoryKind kind : HistoryKind.values()) {
+            if (kind == HistoryKind.heartRateStateSnapshots) {
+                assertTrue(kind.getExperimental());
+                assertEquals(CapabilityState.unsupported, p.historyCapability(kind));
+                continue;
+            }
             assertFalse(kind.getExperimental());
             assertEquals(CapabilityState.compatibleCandidate, p.historyCapability(kind));
         }
@@ -206,7 +240,7 @@ public final class BinaryIntegrationTest {
     }
     @Test public void binaryPublicContractLoads() throws Exception {
         assertEquals("SomaLoop 2 SDK", SomaLoop.product);
-        assertTrue(SomaLoop.version.startsWith("0.1."));
+        assertEquals("0.2.0", SomaLoop.version);
         assertEquals(64, SomaLoop.buildRevision.length());
         String expectedRevision = System.getenv("SOMALOOP_EXPECTED_REVISION");
         if (expectedRevision != null) assertEquals(expectedRevision, SomaLoop.buildRevision);
@@ -622,4 +656,17 @@ public final class BinaryIntegrationTest {
         assertEquals(65535, ppgEvent.getRecord().getFrame().getSequence());
         assertEquals("", ecg.getRawHex());
     }
+    @Test public void firmwareOTAHostContractIsAvailableFromBinary() {
+        FirmwareReleaseSource source = new FirmwareReleaseSource("https://firmware.example.test/catalog.json", "trusted-pin");
+        assertEquals("trusted-pin", source.getCatalogSHA256());
+        FirmwareBootloader candidate = new FirmwareBootloader("explicit-selection", "DFU", -40);
+        assertEquals("explicit-selection", candidate.getId());
+        assertEquals("verificationFailed", FirmwareUpdateError.verificationFailed.name());
+        assertEquals("verifyingApplication", FirmwareUpdatePhase.verifyingApplication.name());
+        try {
+            FirmwareUpdaterJava.class.getMethod("update", SomaLoopClient.class, FirmwareReleaseSource.class, FirmwareUpdaterJava.Callback.class);
+            FirmwareUpdaterJava.class.getMethod("resume", FirmwareReleaseSource.class, String.class, FirmwareUpdaterJava.Callback.class);
+        } catch (NoSuchMethodException error) { throw new AssertionError(error); }
+    }
+
 }
