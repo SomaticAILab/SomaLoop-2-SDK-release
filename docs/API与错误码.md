@@ -1,5 +1,19 @@
 # API 与错误处理
 
+## 0.2.0 新接口与迁移
+
+主库、实验库与 Demo 使用同一版本并重新编译；原模块与包名保持。最低固件准入不等于每项能力可用，新增历史枚举也须处理未知值。0088 生成时间规则不能直接套用到升级后生成的 0128 历史。
+
+`CaptureRecoverySupervisor` 是显式启用的恢复管理入口。Swift 用 `init(storageRoot:exportRoot:bluetoothMode:)`，Kotlin 用 `CaptureRecoverySupervisor(context, storageRoot, exportRoot)` 创建，再根据当前用户意图调用 `begin`。通过 `events()` 和 `status()` 观察，`begin` 返回不等于已有有效帧。暂停调用 `pauseOrStop()`，等待 `operationStillActive=false` 且阶段为 `paused/completed` 后再 `close()`。权限或蓝牙环境恢复后调用 `retryAfterEnvironmentChange()`；不要另建同设备的连接／看门狗循环。监督器不保证系统挂起、强退后自动执行，不自动继承上次进程的采集授权。
+
+`FirmwareUpdater` 负责固件下载校验、停止与导出交接、传输和升级后核验。App 从可信配置提供 `FirmwareReleaseSource(catalogURL, catalogSHA256)`；Swift 使用对应具名参数。`checkForUpdate` 只检查发行信息，用户选择升级后调用 `update`；由监督器持有采集时使用 Swift `supervisor.updateFirmware(using:from:)` / Kotlin `supervisor.updateFirmware(updater, source)`。Java 使用 `FirmwareUpdaterJava` 的回调入口。本包不附固件文件，也不提供已上线的固件服务。
+
+升级期间保持前台；`cancel()` 不代表回滚，进程重启后的 `resume` 需宿主显式调用。`bootloaderSelectionRequired` 要求用户识别本次扫描中的物理目标，不能按名字或信号强度自动选择；`retirementUnconfirmed` 保留连接所有权，不能靠新建实例绕过。只有升级后身份和目标版本核验通过才显示完成；之后创建新采集会话。生产 HTTPS 供包、手机升级和断电恢复尚未完成设备验收。
+
+可选实验模块的 `FirmwareRRIParser(device)` 消费完整 `SDKEvent` 序列，或同一已识别会话、按原顺序输入的 `JournalRecord`；切换会话须 `reset()` 或新建解析器。Swift 用 `init(device:)`，Kotlin／Java 使用构造函数和 `consume`。解析器不连接设备或启动流；输出 `intervalRaw`、`confidenceRaw`、`timePointRaw`、首末接收定位，单位保持 `unknown`、质量为 `firmwareUnvalidated`、`timingVerified=false`，不能直接送入正式 HRV 算法。
+
+历史记录级装批、`historyWithDeviceTiming` 的契约修订选择及 `PairedTimingContract` 见[数据与时间语义](数据与时间语义.md)。实际限制和证据范围见[功能支持范围](验收状态.md)。
+
 Swift 使用 actor 和 `async/await`；Kotlin 主要使用 `suspend` 与 `Flow`；Java 使用 `SomaLoopJava.Callback<T>` 和事件订阅。
 
 本文的“宿主”指接入 SDK 的 App。`compatibleCandidate` 表示调用路径开放，具体设备的数据、后台运行和长时间采集仍需分别验证；`unknown` 表示信息不足，不等于零或关闭。
@@ -37,7 +51,7 @@ Swift 使用 actor 和 `async/await`；Kotlin 主要使用 `suspend` 与 `Flow`�
 
 `DeviceInfoResult.batteryReading`、`DecodedPacket.measurementValues` 和 `ECGRecording.receptionSummary` 提供类型化值及接收统计；Swift 另有 `ECGRecording.frames`，Java 对应 `ApiViews` 静态方法。字段与单位见[数据语义](数据与时间语义.md)。
 
-从 0.1.13/build29 开始，新增 `DecodedPacket.kind` / `historyKind`、`measurements`、`alarmLabel` 与扫描候选视图。它们由 SDK 解释包分类、单位和文本，App 无需解析命令字、布局名或原始字节。这些接口已包含在当前 0.1.16 / build 33 交付中；具体平台验证范围见随包发布报告。
+`DecodedPacket.kind` / `historyKind`、`measurements`、`alarmLabel` 与扫描候选视图已包含在 0.1.16 / build 33 发布包中。它们由 SDK 解释包分类、单位和文本，App 无需解析命令字、布局名或原始字节；更早版本按对应发布报告核对接口范围。
 
 | 类型化视图 | 用法 |
 | --- | --- |
@@ -63,7 +77,7 @@ Java 通过 `PublicDataViewsKt.getKind(packet)`、`getHistoryKind(packet)`、`ge
 
 历史类型为 `activity`、`steps`、`sleep`、`heartRate`、`singleHeartRate`、`hrv`、`alarms`、`sport`、`temperature`、`ppi`、`spo2`、`sleepActivity`、`sleepDebug`、`systemEvents`、`powerDebug`。这 15 类和闹钟设置读取均为 C，默认无需读取开关。`historyByKind` 以这些名称为键；原 `history` 表保留。Java 使用 `ApiViews.historyByKind(snapshot)`。
 
-raw ECG 和马达默认可调用。联合采集、校时及历史时间规则仅使用 **0.0.8.8／固件日期 260604** 配置；raw ACC 在同一固件日期为 C，可通过 `startCapture(accOnly)` 持久采集；其他准入固件保持 E，普通 startCapture 不放行，实时诊断为 U。
+raw ECG 和马达默认可调用。本版本的联合采集使用 `00000808-260604` 或 `00010208-261016` 配置；设备校时及内建历史时间规则仍仅使用前者。raw ACC 在 `00000808-260604` 为 C，可通过 `startCapture(accOnly)` 持久采集；其他准入固件保持 E，普通 startCapture 不放行，实时诊断为 U。`heartRateStateSnapshots` 是新增实验历史，需精确新固件配置及显式实验启用，不属于默认 15 类。
 
 `allowExperimental`／`allowUntested` 读取重载保留兼容，仅控制历史和设置读取；它们不绕过最低固件、`unsupported` 或严格解码，也不启用校时、清除或研究流。
 
@@ -111,10 +125,16 @@ Swift 使用 `SDKError`；Kotlin 使用 `SDKException.code`，Java 回调使用 
 
 | `readWearState` 条件 | 行为 |
 | --- | --- |
-| 固件 | 仅 `00000808-260604`（0.0.8.8，固件日期 2026-06-04） |
+| 固件 | 本版本支持 `00000808-260604` 和 `00010208-261016`；其他日期不继承此配置，旧公开包不包含新增配置 |
 | 观察时长 | 1–10 秒，默认 5 秒；另计写入和关闭超时 |
 | 检查方式 | 短暂打开 PPG / 调试，返回固件接触状态，不留采集目录 |
 | 已有操作 / 无信号 / 关闭失败 | 分别为 `busy` / `unknown` / `stopUnconfirmed` 并断连 |
+
+本版本包含 `lastWearCheckDiagnostics`，保存当前客户端最近一次获准检查的关闭诊断；Java 包装器使用 `lastWearCheckDiagnostics()`。报告包含最多五个步骤的 `phase`、写入开始/完成偏移、匹配应答接收偏移、`outcome`、`failureStage` 和错误码，以及 `stopConfirmed` / `disconnectReason`。偏移来自主机单调时钟，写入完成不等于设备确认，`stopConfirmed` 也不证明物理传感器状态。
+
+`00010208-261016` 的调试关闭按原生写完成处理，并同时要求 PPG 停止／退出 ACK 和 3 秒无流数据；不要求调试关闭 ACK。`00000808-260604` 保留原逐命令 ACK 规则，不能套用新固件的短测结论。任一必要条件未满足仍按停止未确认处理。
+
+遇到 `stopUnconfirmed` 时先保存该诊断，等待断连状态，再由 App 显式连接原设备并核对身份；不要紧接着发起 ECG 或其他操作，也不要把重连成功当成上次停止已获确认。该检查不创建持久会话，报告不是可调用 `resumePendingSession` 恢复的待清理任务；不要自动重复佩戴检测造成重连循环。报告仅保存在内存，下一次获准检查会替换；跨检查的 `deviceTag` 不用于关联设备。固件主动佩戴事件的未知码义保持不变。
 
 采集中的 `skinContact` 事件解释完整的固件接触报告；被动接触状态事件保留原码和 `state=unknown`，App 不按非零值推断已佩戴，`touchValue` 阈值也未确认。未接触时提示调整佩戴或停止 PPG。升级需重新编译并补齐新枚举分支。
 
@@ -149,6 +169,8 @@ Swift 使用 `SDKError`；Kotlin 使用 `SDKException.code`，Java 回调使用 
 ## 设备名称读取与改名
 
 0.1.14/build31 新增 `readDeviceName()` 与 `setDeviceName(name)`，均要求设备已连接、通过正常固件准入且客户端空闲；采集、历史同步和其他独占操作中返回 `busy`。能力键为 `deviceNameRead`、`deviceNameWrite`，在支持固件范围内为兼容候选，无实验开关或设备地址白名单；`settingsWrite` 不因此开放其他设置。
+
+本版本适配 `00010208-261016` 的名称读取；该固件的名称写入为 `unsupported`，在发送前拒绝。最低版本准入不代表允许改名，应分别检查两个能力键。
 
 `readDeviceName()` 返回 `DeviceNameReading`：`name` 是设备名称字段中首个 NUL 之前的可打印 ASCII 文本，空字符串保留；编码无法解释时为 `nil/null`，完整通知保存在 `rawHex`。这个字段**不保证等于当前广播名**，也不能当作改名后的校验值。扫描结果的 `DiscoveredDevice.name` 才是扫描时取得的名称，也可能受系统缓存影响；设备身份继续用连接后读回的 MAC 核对。
 
