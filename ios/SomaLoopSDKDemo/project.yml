@@ -27,7 +27,7 @@ targets:
       properties:
         CFBundleDisplayName: SomaLoop 2 SDK Demo
         CFBundleShortVersionString: '0.2.0'
-        CFBundleVersion: '40'
+        CFBundleVersion: '41'
         NSBluetoothAlwaysUsageDescription: 通过蓝牙连接您选择的手环，读取设备数据并在本机保存原始采集。
         UIBackgroundModes: [bluetooth-central]
         UILaunchScreen: {}

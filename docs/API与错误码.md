@@ -6,7 +6,9 @@
 
 `CaptureRecoverySupervisor` 是显式启用的恢复管理入口。Swift 用 `init(storageRoot:exportRoot:bluetoothMode:)`，Kotlin 用 `CaptureRecoverySupervisor(context, storageRoot, exportRoot)` 创建，再根据当前用户意图调用 `begin`。通过 `events()` 和 `status()` 观察，`begin` 返回不等于已有有效帧。暂停调用 `pauseOrStop()`，等待 `operationStillActive=false` 且阶段为 `paused/completed` 后再 `close()`。权限或蓝牙环境恢复后调用 `retryAfterEnvironmentChange()`；不要另建同设备的连接／看门狗循环。监督器不保证系统挂起、强退后自动执行，不自动继承上次进程的采集授权。
 
-`FirmwareUpdater` 负责固件下载校验、停止与导出交接、传输和升级后核验。App 从可信配置提供 `FirmwareReleaseSource(catalogURL, catalogSHA256)`；Swift 使用对应具名参数。`checkForUpdate` 只检查发行信息，用户选择升级后调用 `update`；由监督器持有采集时使用 Swift `supervisor.updateFirmware(using:from:)` / Kotlin `supervisor.updateFirmware(updater, source)`。Java 使用 `FirmwareUpdaterJava` 的回调入口。本包不附固件文件，也不提供已上线的固件服务。
+`FirmwareUpdater` 负责固件下载校验、停止与导出交接、传输和升级后核验。App 从可信配置提供 `FirmwareReleaseSource(catalogURL, catalogSHA256)`；Swift 使用对应具名参数。`checkForUpdate` 只检查发行信息，用户选择升级后调用 `update`；由监督器持有采集时使用 Swift `supervisor.updateFirmware(using:from:)` / Kotlin `supervisor.updateFirmware(updater, source)`。Java 使用 `FirmwareUpdaterJava` 的回调入口。0128 固件服务已上线，build 40 可配置清单 URL `https://api-staging.somaticai.cn/firmware/somaloop2/0128-261016/catalog.json` 与可信 SHA-256 `c221383a54a00599fb1e82e5fb49ef6e1c74bb9385ae027f299109a4f5827c44`。SDK 按清单下载 ZIP 并校验，仅允许审核来源 `00000808-260604` 升级至 `00010208-261016`。固件包通过服务端分发。
+
+build 41 可直接使用 Swift `FirmwareReleaseSource.somaloop2Firmware0128` 或 Kotlin/Java `FirmwareReleaseSource.SOMALOOP_2_FIRMWARE_0128`。检查清单后，以 Swift `release.isUpdateAvailable(for: profile)` 或 Kotlin/Java `release.isUpdateAvailable(profile)` 判断设备是否属于审核过的升级来源。Swift 宿主可向 `FirmwareUpdater` 传入 `networkConfiguration: URLSessionConfiguration` 设置本次下载的网络策略，SDK 复制该配置并继续校验下载内容。
 
 升级期间保持前台；`cancel()` 不代表回滚，进程重启后的 `resume` 需宿主显式调用。`bootloaderSelectionRequired` 要求用户识别本次扫描中的物理目标，不能按名字或信号强度自动选择；`retirementUnconfirmed` 保留连接所有权，不能靠新建实例绕过。只有升级后身份和目标版本核验通过才显示完成；之后创建新采集会话。生产 HTTPS 供包、手机升级和断电恢复尚未完成设备验收。
 

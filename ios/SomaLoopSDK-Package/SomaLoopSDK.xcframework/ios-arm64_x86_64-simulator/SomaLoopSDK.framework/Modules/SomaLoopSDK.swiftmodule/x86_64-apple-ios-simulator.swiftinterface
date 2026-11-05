@@ -497,6 +497,7 @@ public struct HeartRateStateHistory : Swift.Codable, Swift.Equatable, Swift.Send
 }
 public struct FirmwareReleaseSource : Swift.Sendable {
   public let catalogURL: Foundation.URL, catalogSHA256: Swift.String
+  public static let somaloop2Firmware0128: SomaLoopSDK.FirmwareReleaseSource
   public init(catalogURL: Foundation.URL, catalogSHA256: Swift.String)
 }
 public struct FirmwareRelease : Swift.Codable, Swift.Equatable, Swift.Sendable {
@@ -508,6 +509,7 @@ public struct FirmwareRelease : Swift.Codable, Swift.Equatable, Swift.Sendable {
   public let sourceProfiles: [Swift.String]
   public let minimumBatteryPercent: Swift.Int
   public init(schemaVersion: Swift.Int = 1, releaseID: Swift.String, firmwareHex: Swift.String, dateHex: Swift.String, packageURL: Foundation.URL, packageSHA256: Swift.String, packageBytes: Swift.Int, applicationSHA256: Swift.String, initPacketSHA256: Swift.String, hardwareVersion: Swift.UInt32, softdeviceRequirements: [Swift.UInt32], sourceProfiles: [Swift.String], minimumBatteryPercent: Swift.Int = 30)
+  public func isUpdateAvailable(for profile: SomaLoopSDK.DeviceProfile) -> Swift.Bool
   public static func == (a: SomaLoopSDK.FirmwareRelease, b: SomaLoopSDK.FirmwareRelease) -> Swift.Bool
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
@@ -567,7 +569,8 @@ public struct FirmwareUpdateResult : Swift.Codable, Swift.Sendable {
   public init(from decoder: any Swift.Decoder) throws
 }
 @_hasMissingDesignatedInitializers public actor FirmwareUpdater {
-  public init(storageRoot: Foundation.URL, exportRoot: Foundation.URL, bluetoothMode: SomaLoopSDK.BluetoothMode = .foregroundOnly) throws
+  public convenience init(storageRoot: Foundation.URL, exportRoot: Foundation.URL, bluetoothMode: SomaLoopSDK.BluetoothMode = .foregroundOnly) throws
+  public init(storageRoot: Foundation.URL, exportRoot: Foundation.URL, bluetoothMode: SomaLoopSDK.BluetoothMode = .foregroundOnly, networkConfiguration: Foundation.URLSessionConfiguration) throws
   public func events() -> _Concurrency.AsyncStream<SomaLoopSDK.FirmwareUpdateSnapshot>
   public func status() -> SomaLoopSDK.FirmwareUpdateSnapshot
   public func cancel()
