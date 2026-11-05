@@ -1,5 +1,14 @@
 # SomaLoop 2 SDK 变更记录
 
+## 0.2.0 / build 41 · 2026-11-05
+
+- 0128 固件清单与 ZIP 通过 SomaLoop HTTPS 服务提供，SDK 执行远程查询、下载和 SHA-256 校验。
+- Swift 新增 `FirmwareReleaseSource.somaloop2Firmware0128`，Kotlin/Java 新增 `FirmwareReleaseSource.SOMALOOP_2_FIRMWARE_0128`，包含审核后的固定地址与可信哈希。
+- 双端 `FirmwareRelease.isUpdateAvailable` 提供基于设备固件与日期的升级来源判断。当前版本、较新版本和未知来源返回 false。
+- Swift `FirmwareUpdater` 新增 `networkConfiguration` 初始化参数，复制宿主网络配置，保留 HTTPS、重定向、大小及哈希检查。
+- 平台与二进制消费者验证见随包发布报告。手机刷写、后台与长期设备验收分别记录。
+
+
 ## 0.2.0 / build 40 · 2026-11-04
 
 - 联合采集、主动接触查询支持精确固件配置 `00010208-261016`；新固件启动前清理残留流，确认停止／退出及静默后建立新采集段。

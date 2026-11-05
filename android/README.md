@@ -1,6 +1,6 @@
 # SomaLoop 2 SDK · Android
 
-版本 0.2.0 / build 40，最低 API 26。本包仅供内部评估与开发测试。使用范围见[接入说明](../README.md)与 [SDK 评估许可](../LICENSE)。
+版本 0.2.0 / build 41，最低 API 26。本包仅供内部评估与开发测试。使用范围见[接入说明](../README.md)与 [SDK 评估许可](../LICENSE)。
 
 `repository` 提供本地 Maven SDK，随包列明的运行依赖同在本地仓库，由 Gradle 解析。主模块坐标为 `com.somaticai.somaloop:sdk:0.2.0`。示例在 `SomaLoopSDKDemo`；主库与研究库须来自同一构建。
 

@@ -259,6 +259,33 @@ final class BinaryIntegrationTests:XCTestCase {
         XCTAssertEqual(p.advertisedName,"Original BLE name")
         XCTAssertEqual(p.state,.compatibleCandidate)
     }
+    func testHostedFirmwareBinarySurface() throws {
+        let source = FirmwareReleaseSource.somaloop2Firmware0128
+        XCTAssertEqual(source.catalogURL.absoluteString,
+                       "https://api-staging.somaticai.cn/firmware/somaloop2/0128-261016/catalog.json")
+        XCTAssertEqual(source.catalogSHA256,
+                       "c221383a54a00599fb1e82e5fb49ef6e1c74bb9385ae027f299109a4f5827c44")
+        let release = FirmwareRelease(
+            releaseID: "synthetic-0128", firmwareHex: "00010208", dateHex: "261016",
+            packageURL: source.catalogURL.deletingLastPathComponent().appendingPathComponent("firmware.zip"),
+            packageSHA256: String(repeating: "a", count: 64), packageBytes: 1,
+            applicationSHA256: String(repeating: "b", count: 64),
+            initPacketSHA256: String(repeating: "c", count: 64), hardwareVersion: 52,
+            softdeviceRequirements: [0], sourceProfiles: ["00000808-260604"])
+        let oldProfile = DeviceProfile(deviceID: "synthetic", mac: "001122334455",
+                                       firmwareHex: "00000808", dateHex: "260604")
+        let currentProfile = DeviceProfile(deviceID: "synthetic", mac: "001122334455",
+                                           firmwareHex: "00010208", dateHex: "261016")
+        XCTAssertTrue(release.isUpdateAvailable(for: oldProfile))
+        XCTAssertFalse(release.isUpdateAvailable(for: currentProfile))
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        // Invalid configuration checks the exported initializer before allocating a storage lease.
+        XCTAssertThrowsError(try FirmwareUpdater(
+            storageRoot: root, exportRoot: root.appendingPathComponent("exports"),
+            bluetoothMode: .stateRestoration(identifier: " "), networkConfiguration: .ephemeral)) {
+            XCTAssertEqual($0 as? BluetoothConfigurationError, .invalidRestorationIdentifier)
+        }
+    }
     func testBinaryPublicHistoryContract()throws {
         let profile=DeviceProfile(deviceID:"test",mac:"001122334455",firmwareHex:"00000808",dateHex:"260604")
         XCTAssertEqual(profile.firmwareVersion,"0.0.8.8")

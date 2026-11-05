@@ -1,6 +1,6 @@
 # iOS 接入
 
-SomaLoop 2 SDK 0.2.0 / build 40 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
+SomaLoop 2 SDK 0.2.0 / build 41 支持 iOS 15 及以上。主模块为 `SomaLoopSDK`；限时原始 ECG 等研究入口使用 `SomaLoopExperimental`。
 
 ## 安装
 
