@@ -79,7 +79,7 @@ Java 通过 `PublicDataViewsKt.getKind(packet)`、`getHistoryKind(packet)`、`ge
 
 历史类型为 `activity`、`steps`、`sleep`、`heartRate`、`singleHeartRate`、`hrv`、`alarms`、`sport`、`temperature`、`ppi`、`spo2`、`sleepActivity`、`sleepDebug`、`systemEvents`、`powerDebug`。这 15 类和闹钟设置读取均为 C，默认无需读取开关。`historyByKind` 以这些名称为键；原 `history` 表保留。Java 使用 `ApiViews.historyByKind(snapshot)`。
 
-raw ECG 和马达默认可调用。本版本的联合采集使用 `00000808-260604` 或 `00010208-261016` 配置；设备校时及内建历史时间规则仍仅使用前者。raw ACC 在 `00000808-260604` 为 C，可通过 `startCapture(accOnly)` 持久采集；其他准入固件保持 E，普通 startCapture 不放行，实时诊断为 U。`heartRateStateSnapshots` 是新增实验历史，需精确新固件配置及显式实验启用，不属于默认 15 类。
+raw ECG 和马达默认可调用。联合采集、设备校时、内建历史时间规则和恢复出厂适用于 0.0.8.8 及以上固件。raw ACC 为 C，可通过 `startCapture(accOnly)` 持久采集，实时诊断为 U。`heartRateStateSnapshots` 是新增实验历史，需精确新固件配置及显式实验启用，不属于默认 15 类。
 
 `allowExperimental`／`allowUntested` 读取重载保留兼容，仅控制历史和设置读取；它们不绕过最低固件、`unsupported` 或严格解码，也不启用校时、清除或研究流。
 
@@ -98,7 +98,7 @@ raw ECG 和马达默认可调用。本版本的联合采集使用 `00000808-2606
 
 待关闭记录按设备持久保存，恢复关闭核对原 MAC、固件和日期。身份变化时保留待处理记录，相关操作返回 `stopUnconfirmed`；其他设备不受该条记录阻挡。正常停止应答观察和报告保存成功后自动解除占用，无需人工确认，`userConfirmedStopped=false` 不代表忙。仅异常处理收到真实用户反馈后才调用 `confirmHapticsStopped`。`abandonPendingHaptics` 需要非空理由及明确确认，只清理本地待处理项并保存审计，不发送关闭命令。详见[采集与马达](采集与马达节拍.md)。
 
-历史清除不可逆，仅 0.0.8.8 开放实验入口，默认关闭。准备与执行各传 `allowExperimental=true`，执行另传 `confirm=true`；省略实验开关的旧签名返回 `unverifiedCapability`。准备凭证绑定当前连接、设备及类型，执行后重新连接并读回；取消和失败不回滚已发出的请求。详细范围和示例见[历史清除](历史清除.md)。
+历史清除不可逆，0.0.8.8 及以上开放实验入口，默认关闭。准备与执行各传 `allowExperimental=true`，执行另传 `confirm=true`；省略实验开关的旧签名返回 `unverifiedCapability`。准备凭证绑定当前连接、设备及类型，执行后重新连接并读回；取消和失败不回滚已发出的请求。详细范围和示例见[历史清除](历史清除.md)。
 
 ## 错误
 
@@ -127,7 +127,7 @@ Swift 使用 `SDKError`；Kotlin 使用 `SDKException.code`，Java 回调使用 
 
 | `readWearState` 条件 | 行为 |
 | --- | --- |
-| 固件 | 本版本支持 `00000808-260604` 和 `00010208-261016`；其他日期不继承此配置，旧公开包不包含新增配置 |
+| 固件 | 支持 0.0.8.8 及以上，不设上限；0.1.2.8 及以上使用新固件协议，其余使用 0.0.8.8 协议 |
 | 观察时长 | 1–10 秒，默认 5 秒；另计写入和关闭超时 |
 | 检查方式 | 短暂打开 PPG / 调试，返回固件接触状态，不留采集目录 |
 | 已有操作 / 无信号 / 关闭失败 | 分别为 `busy` / `unknown` / `stopUnconfirmed` 并断连 |

@@ -1,17 +1,17 @@
 {
   "version": "0.2.0",
-  "buildNumber": 41,
-  "buildRevision": "a213c75842e69b1f24bf84de78c96a112b19bb0464159e4a84fa70942a616ec7",
-  "tag": "v0.2.0-build41",
+  "buildNumber": 42,
+  "buildRevision": "a31c8897e42696c1864424f628023ddd2e93499d4a372dfbc544bb5e400667e1",
+  "tag": "v0.2.0-build42",
   "currentChecks": [
     {
       "platform": "android",
       "caseID": "android-host",
       "kind": "host-tests",
       "exitCode": 0,
-      "caseCount": 405,
-      "evidenceSHA256": "21d27461983259ac234e56d97e56253697a34a70976b9dc758e0d17250912973",
-      "passed": 404,
+      "caseCount": 403,
+      "evidenceSHA256": "6d3ba52f5aacfbcb5776a03cd5bb43c697c171c78b2ae581052a8f508f88f277",
+      "passed": 402,
       "skipped": 1,
       "failed": 0
     },
@@ -21,7 +21,7 @@
       "kind": "source-build",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "1e39d3fda90208d4c1953c8bab74993acb0ba488ace96091e6f827df0f8bc40d",
+      "evidenceSHA256": "678df70e2e2066cafc342783fce5a5d3aad3a48a7d0dd44e97bee5671035ccc4",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -32,7 +32,7 @@
       "kind": "surface-audit",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "9945b8bdce263ee7b52fbd65053e178198253bffcc5c9132625747b287b7f687",
+      "evidenceSHA256": "c7d57fc3d3d538d9f483a4d85146820c0882519d06c6eee9469415735e89968d",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -43,7 +43,7 @@
       "kind": "surface-tests",
       "exitCode": 0,
       "caseCount": 20,
-      "evidenceSHA256": "70dafbbd23b20cb5cd99f2242deb76df0bde36f1120db36a31f80bc766d22212",
+      "evidenceSHA256": "1f115641b52ab7d1efcc6a4f0c5103ff5472356f5dac221d86c95067c044293b",
       "passed": 20,
       "skipped": 0,
       "failed": 0
@@ -54,7 +54,7 @@
       "kind": "binary-consumer",
       "exitCode": 0,
       "caseCount": 35,
-      "evidenceSHA256": "ee9f6a047332cf151d448eb2be2c8bf2b5d3ea6c47245b927f1900f8de835372",
+      "evidenceSHA256": "ae6ac542cbcc69167cf562c557aa9314ea25c1b447cbf6a81b937725053185bf",
       "passed": 35,
       "skipped": 0,
       "failed": 0
@@ -64,9 +64,9 @@
       "caseID": "swift-host",
       "kind": "host-tests",
       "exitCode": 0,
-      "caseCount": 430,
-      "evidenceSHA256": "85b2a31c2571f6904203616ce1f15ae39efe1768fff95278b11da91e5d50b259",
-      "passed": 430,
+      "caseCount": 429,
+      "evidenceSHA256": "a33774e9aa342a64b34427927f3946a3f7a0cf90116e693b5c3e168ebdae504a",
+      "passed": 429,
       "skipped": 0,
       "failed": 0
     },
@@ -76,7 +76,7 @@
       "kind": "source-build",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "35939f1277699dcf46db113352a126ea45f9383c651e5542eb69aa08fa998764",
+      "evidenceSHA256": "654549bf0da41c8be63e99bda9d5a5aff284f73f4e67eb690238d301d626d4e9",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -87,7 +87,7 @@
       "kind": "consumer-setup",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "bb3eb8306bb34ba4799e9d2f9a4f6c7d55d7bd1e04db98b6181fb151e83a55ff",
+      "evidenceSHA256": "086befa00dada642535b63bac2cbf1802b8607e9a5938ac9e22564326bb9fe87",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -98,7 +98,7 @@
       "kind": "binary-consumer",
       "exitCode": 0,
       "caseCount": 35,
-      "evidenceSHA256": "613377a40342efc87520a0feb9bb22d06c383b6a2f1df9eb4ee0aed751513649",
+      "evidenceSHA256": "3ac4e21b7e334309e233fe1c98148e7cafb81b083c0ab75cf12de70391d74489",
       "passed": 35,
       "skipped": 0,
       "failed": 0
@@ -109,7 +109,7 @@
       "kind": "consumer-device-build",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "6c9553729efcb591b86a1a97affc53de408ae1e60bc09e487a55e90363991227",
+      "evidenceSHA256": "dba4a29ca3a6745bd38c9e37990af1f6da2a7af5daa7164ecc8715d425e7fdbf",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -121,7 +121,7 @@
   "rawDataIncluded": false,
   "currentEvidenceIndexSHA256": null,
   "ciEvidenceSHA256": [
-    "c6e1ad33a7ac3149c26af45c0e9145104c418e792275272ef6eebac37333dae5"
+    "fc395e1164faaae9e41043730ceedddd2dce0e3e1567ea0c7f772cd47484d9c3"
   ],
   "publicDocuments": [
     "README.md",
