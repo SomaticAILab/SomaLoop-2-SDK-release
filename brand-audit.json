@@ -17,7 +17,7 @@
   "reviewedDiscoveryCompatibilityLiteralsAllowed": true,
   "coverageLimits": "Decoded text/metadata and binary strings; no OCR, visual logo recognition, originality or legal-rights determination.",
   "scannerSHA256": "bdde604632889bf1e61fc98439dff65dd08e5040d503cc71f73278acac36cf6a",
-  "inputManifestSHA256": "50c40b70d03606f6b75b2b667beae313166a436b44ea89c0734ac0ff352e32a0",
+  "inputManifestSHA256": "ee672172a43963e23e0a575c66b6d8df45819a93a892beb1e72952facac65667",
   "inputFiles": 147,
   "policy": "only reviewed factory-discovery literals in scoped runtime/docs/tests; no general hardware-name exceptions; third-party notices retained"
 }

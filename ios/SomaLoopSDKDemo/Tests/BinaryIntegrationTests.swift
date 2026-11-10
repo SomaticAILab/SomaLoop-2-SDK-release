@@ -343,20 +343,16 @@ final class BinaryIntegrationTests:XCTestCase {
         let booleans=try JSONDecoder().decode(ProtocolValue.self,from:Data("[false,true,0,1]".utf8))
         XCTAssertEqual(booleans,.array([.boolean(false),.boolean(true),.integer(0),.integer(1)]))
     }
-    func testBinarySleepContractPreservesRawWithoutGenerationRule()throws {
+    func testBinarySleepContractAppliesToLaterFirmware()throws {
         let record=try sleepRecord()
         for (firmware,date) in [("00000808","260603"),("00000809","260519")] {
             let profile=DeviceProfile(deviceID:"test",mac:"001122334455",firmwareHex:firmware,dateHex:date)
             let result=SleepTimelineResolver.resolve(record,profile:profile,utcOffsetMinutes:480)
-            XCTAssertEqual(result.status,.unresolved);XCTAssertEqual(result.reason,"unverified_rule")
-            XCTAssertEqual(result.rawSlots.map(\.rawValue),[1,0,9]);XCTAssertTrue(result.intervals.isEmpty)
-            XCTAssertNil(result.ruleID);XCTAssertNil(result.evidenceID)
-            XCTAssertNil(SleepTimelineResolver.recordStart(record,generationProfile:profile,utcOffsetMinutes:480))
-            XCTAssertNil(SleepTimelineResolver.ruleInfo(generationProfile:profile))
+            XCTAssertEqual(result.status,.resolved);XCTAssertNil(result.reason)
+            XCTAssertNotNil(SleepTimelineResolver.recordStart(record,generationProfile:profile,utcOffsetMinutes:480))
+            XCTAssertNotNil(SleepTimelineResolver.ruleInfo(generationProfile:profile))
             let adapted=try SomaContractAdapter.historyWithDeviceTiming(record,deviceID:"01ARZ3NDEKTSV4RRFFQ69G5FAV",generationProfile:profile,utcOffsetMinutes:480)
-            XCTAssertEqual(adapted.objects.count,1);XCTAssertEqual(adapted.objects[0]["raw_hex"],.text(record.rawHex))
-            XCTAssertEqual(adapted.retainedRawRecords,[record]);XCTAssertEqual(adapted.rejections.map(\.reason),["unverified_rule"])
-            XCTAssertNil(adapted.provenance[0]["sleep_time_rule"])
+            XCTAssertTrue(adapted.rejections.isEmpty)
         }
     }
     func testBinaryDeviceTimingHeartRateAndBatch()throws {

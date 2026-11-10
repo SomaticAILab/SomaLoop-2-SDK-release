@@ -144,7 +144,7 @@ public final class BinaryIntegrationTest {
             assertEquals(CapabilityState.compatibleCandidate, p.capability("ppgOnly"));
             assertEquals(CapabilityState.compatibleCandidate, p.capability("rawECG"));
             assertEquals(CapabilityState.untested, p.capability("diagnostics"));
-            assertEquals(CapabilityState.untested, p.capability("ppgAccPaired"));
+            assertEquals(CapabilityState.compatibleCandidate, p.capability("ppgAccPaired"));
             assertEquals(CapabilityState.compatibleCandidate, p.capability("measurements"));
             assertEquals(CapabilityState.compatibleCandidate, p.historyCapability(HistoryKind.sleep));
         }
