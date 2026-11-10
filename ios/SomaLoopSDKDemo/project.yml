@@ -26,7 +26,7 @@ targets:
       path: Info.plist
       properties:
         CFBundleDisplayName: SomaLoop 2 SDK Demo
-        CFBundleShortVersionString: '0.2.0'
+        CFBundleShortVersionString: '0.2.1'
         CFBundleVersion: '42'
         NSBluetoothAlwaysUsageDescription: 通过蓝牙连接您选择的手环，读取设备数据并在本机保存原始采集。
         UIBackgroundModes: [bluetooth-central]

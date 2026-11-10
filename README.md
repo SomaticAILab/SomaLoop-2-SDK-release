@@ -2,13 +2,13 @@
 
 SomaLoop 2 SDK 提供可穿戴设备的 iOS / Android 原生接入，提供二进制库、Swift / Kotlin / Java 示例及接入文档。
 
-版本：**0.2.0 / build 42**。支持有效四字节 BCD 固件 **≥0.0.8.8（含）**，不设上限。公开模块为 `SomaLoopSDK`、`SomaLoopExperimental`，Android 包名为 `com.somaticai.somaloop`。
+版本：**0.2.1 / build 43**。支持有效四字节 BCD 固件 **≥0.0.8.8（含）**，不设上限。公开模块为 `SomaLoopSDK`、`SomaLoopExperimental`，Android 包名为 `com.somaticai.somaloop`。
 
 公开提供下载，按 [SDK 评估许可](LICENSE) 用于内部评估；商业使用或再分发需另行授权。
 
 ## 接入
 
-远程仓库接入、版本锁定及随包本地方式见[远程依赖接入](docs/远程依赖接入.md)。
+远程仓库接入、版本锁定及随包本地方式见[远程依赖接入](docs/远程依赖接入.md)。0.2.1 新增的逐页保存、停止锚点证据分级及 iOS 绑定设备恢复见[分页同步与后台连接](docs/分页同步与后台连接.md)。
 
 | 平台 | 安装方式 | 文档 |
 | --- | --- | --- |

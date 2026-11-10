@@ -1,5 +1,7 @@
 # API 与错误处理
 
+0.2.1 新增 `HistorySyncOptions` 逐页回调与软预算、`historyAnchorSupport`，以及 iOS `setConnectionRecoveryTarget(id:expectedMAC:)`。调用、完成／中断语义和平台限制见[分页同步与后台连接](分页同步与后台连接.md)。
+
 ## 0.2.0 新接口与迁移
 
 主库、实验库与 Demo 使用同一版本并重新编译；原模块与包名保持。最低固件准入不等于每项能力可用，新增历史枚举也须处理未知值。0088 生成时间规则不能直接套用到升级后生成的 0128 历史。
@@ -88,7 +90,7 @@ raw ECG 和马达默认可调用。联合采集、设备校时、内建历史时
 - 历史批次先保存 `records`，再检查 `complete`、`interruption` 和 `continuationAvailable`。手动续页限原连接和同类未结束读取；跨连接使用 checkpoint 对账。
 - 设置读取支持 `time/personalInfo/automaticMeasurement/reminders/alarms/basic`。闹钟仅在取得完整列表后返回快照，部分结果使用历史批次；每日步数目标由 App／服务端维护。
 - 主动测量和限时原始 ECG 的合法时长为 30…300 秒。ECG 保存设备原始计数、帧序号、接收统计和 `stopConfirmed`；`interruption` 与停止结果分别处理。
-- 校时调用 `synchronizeClock`，先检查 `clockWrite`。写入异常后读取 `lastClockWriteAttempt`，保留已发生的时间变化和新的时间周期。
+- 校时调用 `synchronizeClock`，先检查 `clockWrite`。写入异常后读取 `lastClockWriteAttempt`，保留已发生的时间变化和新的时间周期。宿主取消对应 Task／协程后，SDK 在预读和写入意图保存后检查取消；iOS 的排队写入还在转交传输层前检查同步撤销标记。通过提交检查并转交传输层后的命令不能保证撤回；失败或取消后保留不确定状态，不自动重试。
 
 采集、历史、主动测量、设置、清除和马达播放共用客户端操作互斥。先结束已有操作，再开始下一项。事件订阅须在操作前建立并及时消费，消费过慢会以 `queueOverflow` 结束订阅。
 

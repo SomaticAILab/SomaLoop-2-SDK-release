@@ -2,8 +2,8 @@ plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
 android {
     namespace="com.somaticai.somaloop.demo"
     compileSdk=36
-    defaultConfig { applicationId="com.somaticai.somaloop.demo"; minSdk=26; targetSdk=36; versionCode=42; versionName="0.2.0" }
+    defaultConfig { applicationId="com.somaticai.somaloop.demo"; minSdk=26; targetSdk=36; versionCode=43; versionName="0.2.1" }
     compileOptions { sourceCompatibility=JavaVersion.VERSION_17; targetCompatibility=JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget="17" }
 }
-dependencies { testImplementation("junit:junit:4.13.2"); implementation("com.somaticai.somaloop:sdk:0.2.0"); implementation("com.somaticai.somaloop:experimental:0.2.0") }
+dependencies { testImplementation("junit:junit:4.13.2"); implementation("com.somaticai.somaloop:sdk:0.2.1"); implementation("com.somaticai.somaloop:experimental:0.2.1") }
