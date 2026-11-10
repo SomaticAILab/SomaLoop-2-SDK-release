@@ -1,17 +1,17 @@
 {
-  "version": "0.2.0",
-  "buildNumber": 42,
-  "buildRevision": "a31c8897e42696c1864424f628023ddd2e93499d4a372dfbc544bb5e400667e1",
-  "tag": "v0.2.0-build42",
+  "version": "0.2.1",
+  "buildNumber": 43,
+  "buildRevision": "31f5d42be03937f1aa6e112bfa4651337b9a5907e67643a859a27df8997c2d46",
+  "tag": "v0.2.1-build43",
   "currentChecks": [
     {
       "platform": "android",
       "caseID": "android-host",
       "kind": "host-tests",
       "exitCode": 0,
-      "caseCount": 403,
-      "evidenceSHA256": "6d3ba52f5aacfbcb5776a03cd5bb43c697c171c78b2ae581052a8f508f88f277",
-      "passed": 402,
+      "caseCount": 412,
+      "evidenceSHA256": "e5eb941f9312586e03aacdaada7811aeaf58865b4437e94b5f2fdac45a17204f",
+      "passed": 411,
       "skipped": 1,
       "failed": 0
     },
@@ -21,7 +21,7 @@
       "kind": "source-build",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "678df70e2e2066cafc342783fce5a5d3aad3a48a7d0dd44e97bee5671035ccc4",
+      "evidenceSHA256": "19472741ee5c85f80b23be531a46fda9f6089199dcc47bd52c0d4e0e53626d76",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -32,7 +32,7 @@
       "kind": "surface-audit",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "c7d57fc3d3d538d9f483a4d85146820c0882519d06c6eee9469415735e89968d",
+      "evidenceSHA256": "1cd230b3d5771d08d871db415af22ee26683084af2d3d3b56be12d6f9bbc1e9e",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -43,7 +43,7 @@
       "kind": "surface-tests",
       "exitCode": 0,
       "caseCount": 20,
-      "evidenceSHA256": "1f115641b52ab7d1efcc6a4f0c5103ff5472356f5dac221d86c95067c044293b",
+      "evidenceSHA256": "b78566afa57293e1a8d6d12a843705f99dcba7e181f31804ec03b97c565d62c8",
       "passed": 20,
       "skipped": 0,
       "failed": 0
@@ -54,7 +54,7 @@
       "kind": "binary-consumer",
       "exitCode": 0,
       "caseCount": 35,
-      "evidenceSHA256": "ae6ac542cbcc69167cf562c557aa9314ea25c1b447cbf6a81b937725053185bf",
+      "evidenceSHA256": "e60c21d891739876da32ab3768641dfde5882dee159c51d250ca29f3a5573e20",
       "passed": 35,
       "skipped": 0,
       "failed": 0
@@ -64,9 +64,9 @@
       "caseID": "swift-host",
       "kind": "host-tests",
       "exitCode": 0,
-      "caseCount": 429,
-      "evidenceSHA256": "a33774e9aa342a64b34427927f3946a3f7a0cf90116e693b5c3e168ebdae504a",
-      "passed": 429,
+      "caseCount": 449,
+      "evidenceSHA256": "9036b5a53ec3b7997146ea065d7488e63cc45020ac07dbff97b3f4e76728a174",
+      "passed": 449,
       "skipped": 0,
       "failed": 0
     },
@@ -76,7 +76,7 @@
       "kind": "source-build",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "654549bf0da41c8be63e99bda9d5a5aff284f73f4e67eb690238d301d626d4e9",
+      "evidenceSHA256": "5419f79d6cdfd877e51dc266344cab405b5c36b1817a4cbaff71d7000c80c7cc",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -87,7 +87,7 @@
       "kind": "consumer-setup",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "086befa00dada642535b63bac2cbf1802b8607e9a5938ac9e22564326bb9fe87",
+      "evidenceSHA256": "f41dc29a33321b76646560124998d26d80b3ef2dfbf1b6698520a3a495aaee77",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -98,7 +98,7 @@
       "kind": "binary-consumer",
       "exitCode": 0,
       "caseCount": 35,
-      "evidenceSHA256": "3ac4e21b7e334309e233fe1c98148e7cafb81b083c0ab75cf12de70391d74489",
+      "evidenceSHA256": "a948ff1ba875306c078db1a3d4f76ac508dc9db323c5b650f221f3301cc1c095",
       "passed": 35,
       "skipped": 0,
       "failed": 0
@@ -109,7 +109,7 @@
       "kind": "consumer-device-build",
       "exitCode": 0,
       "caseCount": 0,
-      "evidenceSHA256": "dba4a29ca3a6745bd38c9e37990af1f6da2a7af5daa7164ecc8715d425e7fdbf",
+      "evidenceSHA256": "04307fb5e59188e778df0d9fb806ce66702e42389f67545de5802e6900ea0926",
       "passed": 0,
       "skipped": 0,
       "failed": 0
@@ -121,7 +121,7 @@
   "rawDataIncluded": false,
   "currentEvidenceIndexSHA256": null,
   "ciEvidenceSHA256": [
-    "fc395e1164faaae9e41043730ceedddd2dce0e3e1567ea0c7f772cd47484d9c3"
+    "8bc7f2ea438303c5e2d17169ef25af9b8f9629d5dbda42dd94df2ffbf12896df"
   ],
   "publicDocuments": [
     "README.md",
@@ -131,6 +131,7 @@
     "docs/Android接入.md",
     "docs/API与错误码.md",
     "docs/数据与时间语义.md",
+    "docs/分页同步与后台连接.md",
     "docs/历史清除.md",
     "docs/恢复出厂.md",
     "docs/验收状态.md",

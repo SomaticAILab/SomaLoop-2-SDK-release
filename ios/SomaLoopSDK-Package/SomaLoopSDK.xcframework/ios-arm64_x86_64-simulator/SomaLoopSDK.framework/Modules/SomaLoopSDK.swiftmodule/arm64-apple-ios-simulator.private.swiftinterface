@@ -717,6 +717,7 @@ public struct HistorySyncResult : Swift.Codable, Swift.Sendable {
   public let records: [SomaLoopSDK.HistoryRecord], checkpoint: SomaLoopSDK.HistoryCheckpoint, complete: Swift.Bool, interruption: SomaLoopSDK.SDKError?, pages: Swift.Int, receivedRecords: Swift.Int, duplicateRecords: Swift.Int, filteredRecords: Swift.Int, unknownTimeRecords: Swift.Int
   public var wireReadMode: Swift.String
   public var clock: SomaLoopSDK.ClockSnapshot?, clockUnavailableReason: Swift.String?
+  public var diagnostics: SomaLoopSDK.HistorySyncDiagnostics?
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
 }
@@ -727,6 +728,28 @@ extension SomaLoopSDK.DeviceProfile {
 }
 public enum HistoryReconciler {
   public static func reconcile(_ packets: [SomaLoopSDK.DecodedPacket], device: SomaLoopSDK.DeviceProfile, kind: SomaLoopSDK.HistoryKind, clockEpoch: Swift.String, since: SomaLoopSDK.DeviceCalendar? = nil, checkpoint: SomaLoopSDK.HistoryCheckpoint? = nil, complete: Swift.Bool = true, interruption: SomaLoopSDK.SDKError? = nil, pages: Swift.Int = 1) throws -> SomaLoopSDK.HistorySyncResult
+}
+public struct HistorySyncOptions : Swift.Sendable {
+  public var since: SomaLoopSDK.DeviceCalendar?, checkpoint: SomaLoopSDK.HistoryCheckpoint?, clockEpoch: Swift.String?
+  public var allowExperimental: Swift.Bool, allowUntested: Swift.Bool, maximumPages: Swift.Int, maximumRecords: Swift.Int, useDeviceAnchor: Swift.Bool
+  public var utcOffsetMinutes: Swift.Int?, maximumDurationSeconds: Swift.Double?
+  public init(since: SomaLoopSDK.DeviceCalendar? = nil, checkpoint: SomaLoopSDK.HistoryCheckpoint? = nil, clockEpoch: Swift.String? = nil, allowExperimental: Swift.Bool = false, allowUntested: Swift.Bool = false, maximumPages: Swift.Int = 1000, maximumRecords: Swift.Int = 100000, useDeviceAnchor: Swift.Bool = false, utcOffsetMinutes: Swift.Int? = nil, maximumDurationSeconds: Swift.Double? = nil)
+}
+public struct HistoryAnchorSupport : Swift.Codable, Swift.Equatable, Swift.Sendable {
+  public let supported: Swift.Bool, evidence: Swift.String, reason: Swift.String
+  public static func == (a: SomaLoopSDK.HistoryAnchorSupport, b: SomaLoopSDK.HistoryAnchorSupport) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct HistorySyncDiagnostics : Swift.Codable, Swift.Sendable {
+  public let elapsedSeconds: Swift.Double, budgetExhausted: Swift.Bool, receivedRecordBytes: Swift.Int
+  public let anchorSupport: SomaLoopSDK.HistoryAnchorSupport
+  public let stopReason: Swift.String
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+extension SomaLoopSDK.DeviceProfile {
+  public func historyAnchorSupport(_ kind: SomaLoopSDK.HistoryKind) -> SomaLoopSDK.HistoryAnchorSupport
 }
 public struct HistoryErasurePreparation : Swift.Codable, Swift.Equatable, Swift.Sendable {
   public let id: Swift.String, deviceIdentity: Swift.String
@@ -1471,6 +1494,7 @@ public enum SomaContractAdapter {
   public func stopScan() async
   public func connect(_ device: SomaLoopSDK.DiscoveredDevice) async throws
   public func disconnect() async throws
+  public func setConnectionRecoveryTarget(id: Swift.String?, expectedMAC: Swift.String?) async throws
   public func readWearState(timeoutSeconds: Swift.Double = 5) async throws -> SomaLoopSDK.WearState
   public func readBattery() async throws -> SomaLoopSDK.BatteryReading
   public func readDeviceInfo() async throws -> [SomaLoopSDK.DecodedPacket]
@@ -1497,6 +1521,7 @@ public enum SomaContractAdapter {
   public func synchronizeHistory(_ kind: SomaLoopSDK.HistoryKind, since: SomaLoopSDK.DeviceCalendar? = nil, checkpoint: SomaLoopSDK.HistoryCheckpoint? = nil, allowExperimental: Swift.Bool = false, allowUntested: Swift.Bool, maximumPages: Swift.Int = 1000, maximumRecords: Swift.Int = 100000, useDeviceAnchor: Swift.Bool = false, utcOffsetMinutes: Swift.Int? = nil) async throws -> SomaLoopSDK.HistorySyncResult
   public func synchronizeHistory(_ kind: SomaLoopSDK.HistoryKind, since: SomaLoopSDK.DeviceCalendar? = nil, checkpoint: SomaLoopSDK.HistoryCheckpoint? = nil, clockEpoch: Swift.String, allowExperimental: Swift.Bool = false, maximumPages: Swift.Int = 1000, maximumRecords: Swift.Int = 100000, useDeviceAnchor: Swift.Bool = false, utcOffsetMinutes: Swift.Int? = nil) async throws -> SomaLoopSDK.HistorySyncResult
   public func synchronizeHistory(_ kind: SomaLoopSDK.HistoryKind, since: SomaLoopSDK.DeviceCalendar? = nil, checkpoint: SomaLoopSDK.HistoryCheckpoint? = nil, clockEpoch: Swift.String, allowExperimental: Swift.Bool = false, allowUntested: Swift.Bool, maximumPages: Swift.Int = 1000, maximumRecords: Swift.Int = 100000, useDeviceAnchor: Swift.Bool = false, utcOffsetMinutes: Swift.Int? = nil) async throws -> SomaLoopSDK.HistorySyncResult
+  public func synchronizeHistory(_ kind: SomaLoopSDK.HistoryKind, options: SomaLoopSDK.HistorySyncOptions, onPage: (@Sendable (SomaLoopSDK.HistorySyncResult) async throws -> Swift.Void)? = nil) async throws -> SomaLoopSDK.HistorySyncResult
   nonisolated public func syncHistory(_ kind: SomaLoopSDK.HistoryKind) -> _Concurrency.AsyncThrowingStream<SomaLoopSDK.HistoryBatch, any Swift.Error>
   nonisolated public func syncHistory(_ kind: SomaLoopSDK.HistoryKind, allowExperimental: Swift.Bool) -> _Concurrency.AsyncThrowingStream<SomaLoopSDK.HistoryBatch, any Swift.Error>
   nonisolated public func syncHistory(_ kind: SomaLoopSDK.HistoryKind, allowExperimental: Swift.Bool = false, allowUntested: Swift.Bool) -> _Concurrency.AsyncThrowingStream<SomaLoopSDK.HistoryBatch, any Swift.Error>

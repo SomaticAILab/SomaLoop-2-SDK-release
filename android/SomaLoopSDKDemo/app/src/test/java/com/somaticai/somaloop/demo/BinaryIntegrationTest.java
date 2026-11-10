@@ -240,7 +240,7 @@ public final class BinaryIntegrationTest {
     }
     @Test public void binaryPublicContractLoads() throws Exception {
         assertEquals("SomaLoop 2 SDK", SomaLoop.product);
-        assertEquals("0.2.0", SomaLoop.version);
+        assertEquals("0.2.1", SomaLoop.version);
         assertEquals(64, SomaLoop.buildRevision.length());
         String expectedRevision = System.getenv("SOMALOOP_EXPECTED_REVISION");
         if (expectedRevision != null) assertEquals(expectedRevision, SomaLoop.buildRevision);
