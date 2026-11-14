@@ -8,7 +8,7 @@
 
 `CaptureRecoverySupervisor` 是显式启用的恢复管理入口。Swift 用 `init(storageRoot:exportRoot:bluetoothMode:)`，Kotlin 用 `CaptureRecoverySupervisor(context, storageRoot, exportRoot)` 创建，再根据当前用户意图调用 `begin`。通过 `events()` 和 `status()` 观察，`begin` 返回不等于已有有效帧。暂停调用 `pauseOrStop()`，等待 `operationStillActive=false` 且阶段为 `paused/completed` 后再 `close()`。权限或蓝牙环境恢复后调用 `retryAfterEnvironmentChange()`；不要另建同设备的连接／看门狗循环。监督器不保证系统挂起、强退后自动执行，不自动继承上次进程的采集授权。
 
-`FirmwareUpdater` 负责固件下载校验、停止与导出交接、传输和升级后核验。App 从可信配置提供 `FirmwareReleaseSource(catalogURL, catalogSHA256)`；Swift 使用对应具名参数。`checkForUpdate` 只检查发行信息，用户选择升级后调用 `update`；由监督器持有采集时使用 Swift `supervisor.updateFirmware(using:from:)` / Kotlin `supervisor.updateFirmware(updater, source)`。Java 使用 `FirmwareUpdaterJava` 的回调入口。0128 固件服务已上线，build 40 可配置清单 URL `https://api-staging.somaticai.cn/firmware/somaloop2/0128-261016/catalog.json` 与可信 SHA-256 `c221383a54a00599fb1e82e5fb49ef6e1c74bb9385ae027f299109a4f5827c44`。SDK 按清单下载 ZIP 并校验，仅允许审核来源 `00000808-260604` 升级至 `00010208-261016`。固件包通过服务端分发。
+`FirmwareUpdater` 负责固件下载校验、停止与导出交接、传输和升级后核验。App 从可信配置提供 `FirmwareReleaseSource(catalogURL, catalogSHA256)`；Swift 使用对应具名参数。`checkForUpdate` 只检查发行信息，用户选择升级后调用 `update`；由监督器持有采集时使用 Swift `supervisor.updateFirmware(using:from:)` / Kotlin `supervisor.updateFirmware(updater, source)`。Java 使用 `FirmwareUpdaterJava` 的回调入口。0128 固件服务已上线，build 40 可配置清单 URL `https://api-staging.somaticai.cn/firmware/somaloop2/0128-261016/catalog.json` 与可信 SHA-256 `c221383a54a00599fb1e82e5fb49ef6e1c74bb9385ae027f299109a4f5827c44`。SDK 按清单下载 ZIP 并校验，来源设备需通过有效 BCD ≥0.0.8.8 的准入，同时精确匹配清单 `sourceProfiles` 中的固件／日期，且目标版本更高。上述固定清单允许 `00000808-260604` 升级至 `00010208-261016`。固件包通过服务端分发。
 
 build 41 可直接使用 Swift `FirmwareReleaseSource.somaloop2Firmware0128` 或 Kotlin/Java `FirmwareReleaseSource.SOMALOOP_2_FIRMWARE_0128`。检查清单后，以 Swift `release.isUpdateAvailable(for: profile)` 或 Kotlin/Java `release.isUpdateAvailable(profile)` 判断设备是否属于审核过的升级来源。Swift 宿主可向 `FirmwareUpdater` 传入 `networkConfiguration: URLSessionConfiguration` 设置本次下载的网络策略，SDK 复制该配置并继续校验下载内容。
 
@@ -136,7 +136,7 @@ Swift 使用 `SDKError`；Kotlin 使用 `SDKException.code`，Java 回调使用 
 
 本版本包含 `lastWearCheckDiagnostics`，保存当前客户端最近一次获准检查的关闭诊断；Java 包装器使用 `lastWearCheckDiagnostics()`。报告包含最多五个步骤的 `phase`、写入开始/完成偏移、匹配应答接收偏移、`outcome`、`failureStage` 和错误码，以及 `stopConfirmed` / `disconnectReason`。偏移来自主机单调时钟，写入完成不等于设备确认，`stopConfirmed` 也不证明物理传感器状态。
 
-`00010208-261016` 的调试关闭按原生写完成处理，并同时要求 PPG 停止／退出 ACK 和 3 秒无流数据；不要求调试关闭 ACK。`00000808-260604` 保留原逐命令 ACK 规则，不能套用新固件的短测结论。任一必要条件未满足仍按停止未确认处理。
+≥0.1.2.8 协议布局的调试关闭按原生写完成处理，并同时要求 PPG 停止／退出 ACK 和 3 秒无流数据；不要求调试关闭 ACK。其余准入固件保留 0088 逐命令 ACK 规则，不能套用新固件的短测结论。任一必要条件未满足仍按停止未确认处理。
 
 遇到 `stopUnconfirmed` 时先保存该诊断，等待断连状态，再由 App 显式连接原设备并核对身份；不要紧接着发起 ECG 或其他操作，也不要把重连成功当成上次停止已获确认。该检查不创建持久会话，报告不是可调用 `resumePendingSession` 恢复的待清理任务；不要自动重复佩戴检测造成重连循环。报告仅保存在内存，下一次获准检查会替换；跨检查的 `deviceTag` 不用于关联设备。固件主动佩戴事件的未知码义保持不变。
 
