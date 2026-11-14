@@ -55,3 +55,9 @@ SomaLoop 2 SDK 提供可穿戴设备的 iOS / Android 原生接入，提供二�
 使用范围见 [SDK 评估许可](LICENSE)，第三方声明见 [NOTICE](legal/NOTICE.md)。
 
 版本变更见 [CHANGELOG](CHANGELOG.md)。
+
+
+
+## 文档修订 · 2026-11-14
+
+当前接入文档已按 build 43 的实际实现修正恢复出厂、设备 HRV、心率状态历史、联合解析、佩戴检查及睡眠时间规则的兼容范围。范围继承的调用支持与具体设备验证分别记录。正式二进制及其原始校验和见 [0.2.1 / build 43 Release](https://github.com/SomaticAILab/SomaLoop-2-SDK-release/releases/tag/v0.2.1-build43)。
